@@ -5,18 +5,20 @@
 DELETE FROM DB.DBA.LOAD_LIST WHERE LL_FILE LIKE '/rdf_import/%';
 
 -- Clear existing graphs so we start clean
-SPARQL CLEAR SILENT GRAPH <http://pavs.kaust.edu.sa/graph/cases>;
-SPARQL CLEAR SILENT GRAPH <http://pavs.kaust.edu.sa/graph/genes>;
-SPARQL CLEAR SILENT GRAPH <http://pavs.kaust.edu.sa/graph/hpoa>;
-SPARQL CLEAR SILENT GRAPH <http://pavs.kaust.edu.sa/graph/hpo-ic>;
-SPARQL CLEAR SILENT GRAPH <http://pavs.kaust.edu.sa/graph/literature>;
+SPARQL CLEAR SILENT GRAPH <https://pavs.phenomebrowser.net/graph/cases>;
+SPARQL CLEAR SILENT GRAPH <https://pavs.phenomebrowser.net/graph/genes>;
+SPARQL CLEAR SILENT GRAPH <https://pavs.phenomebrowser.net/graph/hpoa>;
+SPARQL CLEAR SILENT GRAPH <https://pavs.phenomebrowser.net/graph/hpo-ic>;
+SPARQL CLEAR SILENT GRAPH <https://pavs.phenomebrowser.net/graph/literature>;
+SPARQL CLEAR SILENT GRAPH <https://pavs.phenomebrowser.net/graph/metadata>;
 
 -- Register TTL files for bulk loading (ld_dir queues them; rdf_loader_run processes)
-ld_dir('/rdf_import', 'cases.ttl',      'http://pavs.kaust.edu.sa/graph/cases');
-ld_dir('/rdf_import', 'genes.ttl',      'http://pavs.kaust.edu.sa/graph/genes');
-ld_dir('/rdf_import', 'hpoa.ttl',       'http://pavs.kaust.edu.sa/graph/hpoa');
-ld_dir('/rdf_import', 'hpo_ic.ttl',     'http://pavs.kaust.edu.sa/graph/hpo-ic');
-ld_dir('/rdf_import', 'literature.ttl', 'http://pavs.kaust.edu.sa/graph/literature');
+ld_dir('/rdf_import', 'cases.ttl',      'https://pavs.phenomebrowser.net/graph/cases');
+ld_dir('/rdf_import', 'genes.ttl',      'https://pavs.phenomebrowser.net/graph/genes');
+ld_dir('/rdf_import', 'hpoa.ttl',       'https://pavs.phenomebrowser.net/graph/hpoa');
+ld_dir('/rdf_import', 'hpo_ic.ttl',     'https://pavs.phenomebrowser.net/graph/hpo-ic');
+ld_dir('/rdf_import', 'literature.ttl', 'https://pavs.phenomebrowser.net/graph/literature');
+ld_dir('/rdf_import', 'metadata.ttl',   'https://pavs.phenomebrowser.net/graph/metadata');
 
 -- Show what is queued
 SELECT LL_FILE, LL_GRAPH FROM DB.DBA.LOAD_LIST;

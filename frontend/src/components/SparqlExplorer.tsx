@@ -4,8 +4,8 @@ import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
-const PREFIXES = `PREFIX pavs:  <http://pavs.kaust.edu.sa/ontology/>
-PREFIX pav:   <http://pavs.kaust.edu.sa/data/>
+const PREFIXES = `PREFIX pavs:  <https://pavs.phenomebrowser.net/ontology/>
+PREFIX pav:   <https://pavs.phenomebrowser.net/data/>
 PREFIX hgnc:  <http://identifiers.org/hgnc.symbol/>
 PREFIX hp:    <http://purl.obolibrary.org/obo/HP_>
 PREFIX dc:    <http://purl.org/dc/terms/>
@@ -19,11 +19,11 @@ const EXAMPLE_QUERIES: { key: string; query: string }[] = [
   {
     key: 'commonPhenotypes',
     query: `${PREFIXES}SELECT ?label (COUNT(DISTINCT ?case) AS ?n) WHERE {
-  GRAPH <http://pavs.kaust.edu.sa/graph/cases> {
+  GRAPH <https://pavs.phenomebrowser.net/graph/cases> {
     ?case a pavs:Case ;
           pavs:hasPhenotype ?hpo .
   }
-  GRAPH <http://pavs.kaust.edu.sa/graph/hpo-ic> {
+  GRAPH <https://pavs.phenomebrowser.net/graph/hpo-ic> {
     ?hpo rdfs:label ?label .
   }
 }
@@ -34,7 +34,7 @@ LIMIT 20`,
   {
     key: 'sumf1Cases',
     query: `${PREFIXES}SELECT ?id ?hgvsC ?acmg ?disease WHERE {
-  GRAPH <http://pavs.kaust.edu.sa/graph/cases> {
+  GRAPH <https://pavs.phenomebrowser.net/graph/cases> {
     ?case a pavs:Case ;
           dc:identifier ?id ;
           pavs:hasVariant ?v .
@@ -49,7 +49,7 @@ ORDER BY ?id`,
   {
     key: 'pathogenicVariants',
     query: `${PREFIXES}SELECT ?id ?gene ?hgvsC ?acmg ?disease WHERE {
-  GRAPH <http://pavs.kaust.edu.sa/graph/cases> {
+  GRAPH <https://pavs.phenomebrowser.net/graph/cases> {
     ?case a pavs:Case ;
           dc:identifier ?id ;
           pavs:diseaseLabel ?disease ;
@@ -67,7 +67,7 @@ LIMIT 50`,
   {
     key: 'constrainedGenes',
     query: `${PREFIXES}SELECT ?gene ?loeuf WHERE {
-  GRAPH <http://pavs.kaust.edu.sa/graph/genes> {
+  GRAPH <https://pavs.phenomebrowser.net/graph/genes> {
     ?geneUri pavs:loeuf ?loeuf .
     BIND(STRAFTER(STR(?geneUri), "hgnc.symbol/") AS ?gene)
   }
@@ -79,13 +79,13 @@ LIMIT 30`,
   {
     key: 'diseaseHpo',
     query: `${PREFIXES}SELECT ?hpo ?label WHERE {
-  GRAPH <http://pavs.kaust.edu.sa/graph/hpoa> {
+  GRAPH <https://pavs.phenomebrowser.net/graph/hpoa> {
     ?assoc pavs:disease <https://omim.org/entry/272200> ;
            pavs:hpoTerm ?hpoTerm .
     BIND(REPLACE(STR(?hpoTerm), ".*HP_", "HP:") AS ?hpo)
   }
   OPTIONAL {
-    GRAPH <http://pavs.kaust.edu.sa/graph/hpo-ic> {
+    GRAPH <https://pavs.phenomebrowser.net/graph/hpo-ic> {
       ?hpoTerm rdfs:label ?label .
     }
   }
@@ -94,7 +94,7 @@ LIMIT 30`,
   {
     key: 'consanguineous',
     query: `${PREFIXES}SELECT ?id ?gene ?disease WHERE {
-  GRAPH <http://pavs.kaust.edu.sa/graph/cases> {
+  GRAPH <https://pavs.phenomebrowser.net/graph/cases> {
     ?case a pavs:Case ;
           dc:identifier ?id ;
           pavs:consanguinity "Offspring of consanguineous parents" .
@@ -270,8 +270,8 @@ function isUri(val: string | undefined): boolean {
 
 function shortenUri(uri: string): string {
   const known: [string, string][] = [
-    ['http://pavs.kaust.edu.sa/data/', 'pav:'],
-    ['http://pavs.kaust.edu.sa/ontology/', 'pavs:'],
+    ['https://pavs.phenomebrowser.net/data/', 'pav:'],
+    ['https://pavs.phenomebrowser.net/ontology/', 'pavs:'],
     ['http://identifiers.org/hgnc.symbol/', 'hgnc:'],
     ['http://purl.obolibrary.org/obo/HP_', 'HP:'],
     ['https://omim.org/entry/', 'OMIM:'],

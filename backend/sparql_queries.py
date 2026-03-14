@@ -2,17 +2,17 @@
 sparql_queries.py — SPARQL query templates for the PAVS backend.
 """
 
-GRAPH_CASES    = "http://pavs.kaust.edu.sa/graph/cases"
-GRAPH_GENES    = "http://pavs.kaust.edu.sa/graph/genes"
-GRAPH_HPOA     = "http://pavs.kaust.edu.sa/graph/hpoa"
-GRAPH_HPO_IC   = "http://pavs.kaust.edu.sa/graph/hpo-ic"
-GRAPH_LIT      = "http://pavs.kaust.edu.sa/graph/literature"
-GRAPH_DDD      = "http://pavs.kaust.edu.sa/graph/ddd"
+GRAPH_CASES    = "https://pavs.phenomebrowser.net/graph/cases"
+GRAPH_GENES    = "https://pavs.phenomebrowser.net/graph/genes"
+GRAPH_HPOA     = "https://pavs.phenomebrowser.net/graph/hpoa"
+GRAPH_HPO_IC   = "https://pavs.phenomebrowser.net/graph/hpo-ic"
+GRAPH_LIT      = "https://pavs.phenomebrowser.net/graph/literature"
+GRAPH_DDD      = "https://pavs.phenomebrowser.net/graph/ddd"
 GRAPH_HP_OWL   = "http://purl.obolibrary.org/obo/hp.owl"
 
 PREFIXES = """
-PREFIX pavs:    <http://pavs.kaust.edu.sa/ontology/>
-PREFIX pav:     <http://pavs.kaust.edu.sa/data/>
+PREFIX pavs:    <https://pavs.phenomebrowser.net/ontology/>
+PREFIX pav:     <https://pavs.phenomebrowser.net/data/>
 PREFIX hp:      <http://purl.obolibrary.org/obo/HP_>
 PREFIX mondo:   <http://purl.obolibrary.org/obo/MONDO_>
 PREFIX omim:    <https://omim.org/entry/>
