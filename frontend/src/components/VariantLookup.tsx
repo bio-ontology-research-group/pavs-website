@@ -151,7 +151,7 @@ const VariantLookup: React.FC = () => {
           acmg: searchParams.get('acmg')
         });
       }
-    }
+   // }
   }, [searchParams]);
 
   const handleSearch = () => {
