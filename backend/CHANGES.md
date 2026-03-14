@@ -94,3 +94,41 @@ For Saudi cases without a confirmed `diseaseLabel`:
   then `rdf_loader_run()` + `checkpoint`
 - `VIRT_Parameters_DirsAllowed`: must include `/rdf_import` to allow bulk loading from
   the mounted volume
+
+## 2026-03-14 — Routing, SEO, and Performance improvements
+
+### Navigation & Routing (React)
+
+Migrated the entire frontend from manual `useState` tab-toggling to a modern SPA routing
+architecture using **`react-router-dom`**.
+
+- **Unique URLs**: Every view (Search, Gene Browser, Variant Lookup, etc.) now has a
+  unique, shareable path (e.g., `/gene`, `/variant`, `/about`).
+- **Dynamic Case Routing**: Case details are now served at `/case/:id`.
+- **URL-Synchronized State**: Search criteria (HPO IDs, gene symbols, active tabs,
+  method toggles) are now encoded in the URL search parameters.
+- **Browser History**: Fully supports the browser's "Back" and "Forward" buttons.
+  Navigating back from a case detail page correctly restores previous search results
+  and selections.
+- **SEO Metadata**: Integrated **`react-helmet-async`** to provide dynamic, localized
+  `<title>` and `<meta>` tags for every page, improving search engine visibility and
+  bookmarking.
+
+### Performance & Backend Improvements
+
+- **SPARQL Query Caching**: Implemented a 1024-entry **LRU cache** for `sparql_select`
+  in `main.py`. Reduces load on Virtuoso and ensures near-instant response for repeated
+  queries (like back navigation or frequently accessed cases).
+- **Live Knowledge Graph Sync**: Replaced static file-based gene→disease mapping with
+  a live SPARQL fetch during startup.
+- **Improved HPO API**: Updated `/api/hpo/{id}` to return the English `name` (previously
+  only IDs and definitions were returned), fixing a UI bug where labels showed as
+  "undefined" during back-navigation.
+
+### UI Enhancements
+
+- **Candidate Diseases in Results**: The Phenotype Search results list now includes
+  "Candidate diseases" (OMIM associations inferred from the causative gene) in the
+  Disease column, even if an explicit diagnosis is already present.
+- **Consistent Internal Linking**: All internal navigation (genes, cases) switched
+  to React Router `<Link>` components to maintain SPA state.

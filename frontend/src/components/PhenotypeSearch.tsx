@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import AsyncSelect from 'react-select/async';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import SourceBadge from './SourceBadge';
 
@@ -20,6 +22,7 @@ interface CaseResult {
 
 const PhenotypeSearch: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedHpos, setSelectedHpos] = useState<HpoOption[]>([]);
   const [method, setMethod] = useState<'lin' | 'resnik'>('lin');
   const [includeDisease, setIncludeDisease] = useState(false);
@@ -33,6 +36,62 @@ const PhenotypeSearch: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const lastSearchParams = useRef<string>('');
+
+  // Initialize from URL params and handle back/forward navigation
+  useEffect(() => {
+    const currentParams = searchParams.toString();
+    if (currentParams === lastSearchParams.current) return;
+    lastSearchParams.current = currentParams;
+
+    const hpos = searchParams.get('hpos');
+    const m = searchParams.get('method');
+    const dis = searchParams.get('disease') === 'true';
+    const sau = searchParams.get('saudi') !== 'false'; // default true
+    const ddd = searchParams.get('ddd') === 'true';
+    const lit = searchParams.get('literature') === 'true';
+    const cv = searchParams.get('clinvar') === 'true';
+    const lim = parseInt(searchParams.get('limit') || '200');
+
+    if (hpos) {
+      const hpoIds = hpos.split(',');
+      const hpoList = hpoIds.map(id => ({ value: id, label: id }));
+      setSelectedHpos(hpoList);
+      
+      // Fetch labels for these IDs asynchronously to update the select UI
+      hpoIds.forEach(id => {
+        axios.get(`${API}/api/hpo/${id}`).then(res => {
+          setSelectedHpos(prev => prev.map(p => 
+            p.value === id ? { ...p, label: `${res.data.id} — ${res.data.name || res.data.id}` } : p
+          ));
+        }).catch(() => {});
+      });
+
+      // Trigger search
+      performSearch({
+        hpo_ids: hpoIds,
+        method: (m as any) || 'lin',
+        limit: lim,
+        include_disease_phenotypes: dis,
+        include_saudi: sau,
+        include_ddd: ddd,
+        include_literature: lit,
+        include_clinvar: cv
+      });
+    } else {
+      // Clear results if no HPOs in URL (e.g. user manually cleared URL or navigated back to initial state)
+      setSelectedHpos([]);
+      setResults([]);
+    }
+
+    if (m === 'lin' || m === 'resnik') setMethod(m);
+    setIncludeDisease(dis);
+    setIncludeSaudi(sau);
+    setIncludeDDD(ddd);
+    setIncludeLiterature(lit);
+    setIncludeClinVar(cv);
+    setFetchLimit(lim);
+  }, [searchParams]);
 
   // Infinite scroll: when sentinel enters viewport, show more rows
   useEffect(() => {
@@ -59,22 +118,12 @@ const PhenotypeSearch: React.FC = () => {
     }
   }, []);
 
-  const handleSearch = async () => {
-    if (!selectedHpos.length) return;
+  const performSearch = async (params: any) => {
     setLoading(true);
     setError('');
     setDisplayCount(PAGE_SIZE);
     try {
-      const res = await axios.post(`${API}/api/search/phenotype`, {
-        hpo_ids: selectedHpos.map(h => h.value),
-        method,
-        limit: fetchLimit,
-        include_disease_phenotypes: includeDisease,
-        include_saudi: includeSaudi,
-        include_ddd: includeDDD,
-        include_literature: includeLiterature,
-        include_clinvar: includeClinVar,
-      });
+      const res = await axios.post(`${API}/api/search/phenotype`, params);
       setResults(res.data);
     } catch (e: any) {
       setError(e.message || 'Search failed');
@@ -83,12 +132,52 @@ const PhenotypeSearch: React.FC = () => {
     }
   };
 
+  const handleSearch = () => {
+    if (!selectedHpos.length) return;
+    
+    const hpoIds = selectedHpos.map(h => h.value);
+    const searchParamsObj: any = {
+      hpos: hpoIds.join(','),
+      method,
+      disease: includeDisease.toString(),
+      saudi: includeSaudi.toString(),
+      ddd: includeDDD.toString(),
+      literature: includeLiterature.toString(),
+      clinvar: includeClinVar.toString(),
+      limit: fetchLimit.toString()
+    };
+    setSearchParams(searchParamsObj);
+
+    performSearch({
+      hpo_ids: hpoIds,
+      method,
+      limit: fetchLimit,
+      include_disease_phenotypes: includeDisease,
+      include_saudi: includeSaudi,
+      include_ddd: includeDDD,
+      include_literature: includeLiterature,
+      include_clinvar: includeClinVar,
+    });
+  };
+
+  const handleClear = () => {
+    setSelectedHpos([]);
+    setResults([]);
+    setDisplayCount(PAGE_SIZE);
+    setSearchParams({});
+  };
+
   const isClinVarCase = (id: string) => id.startsWith('ClinVar:');
   const visible = results.slice(0, displayCount);
   const hasMore = displayCount < results.length;
 
   return (
     <div className="search-panel">
+      <Helmet>
+        <title>{t('nav.phenotype')} — PAVS</title>
+        <meta name="description" content="Search for Saudi patient cases and variants by phenotype using Semantic Similarity (Lin/Resnik)." />
+      </Helmet>
+
       <h2>{t('nav.phenotype')}</h2>
 
       <div className="form-group">
@@ -161,7 +250,7 @@ const PhenotypeSearch: React.FC = () => {
         <button className="btn-primary" onClick={handleSearch} disabled={loading || !selectedHpos.length}>
           {loading ? t('search.loading') : t('search.search')}
         </button>
-        <button className="btn-secondary" onClick={() => { setSelectedHpos([]); setResults([]); setDisplayCount(PAGE_SIZE); }}>
+        <button className="btn-secondary" onClick={handleClear}>
           {t('search.clear')}
         </button>
       </div>
@@ -189,18 +278,20 @@ const PhenotypeSearch: React.FC = () => {
                     {isClinVarCase(r.id) ? (
                       <span className="case-id">{r.id}</span>
                     ) : (
-                      <a href={`/case/${encodeURIComponent(r.id)}`} className="case-link">
+                      <Link to={`/case/${encodeURIComponent(r.id)}`} className="case-link">
                         {r.id}
-                      </a>
+                      </Link>
                     )}
                   </td>
                   <td>{r.gene || '—'}</td>
                   <td className="disease-cell">
-                    {r.disease
-                      ? r.disease
-                      : r.suggested_disease
-                        ? <span title={t('case.suggestedDiseaseNote')} style={{ color: '#b07000', fontStyle: 'italic' }}>⚠ {r.suggested_disease}</span>
-                        : '—'}
+                    {r.disease && <div>{r.disease}</div>}
+                    {r.suggested_disease && r.suggested_disease !== r.disease && (
+                      <div className="suggested-disease-mini" title={t('case.suggestedDiseaseNote')}>
+                        <span style={{ color: '#b07000' }}>⚠</span> {r.suggested_disease}
+                      </div>
+                    )}
+                    {!r.disease && !r.suggested_disease && '—'}
                   </td>
                   <td><SourceBadge source={r.source} /></td>
                   <td>

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import SourceBadge from './SourceBadge';
 import HpoTag from './HpoTag';
@@ -143,6 +145,10 @@ const CaseDetail: React.FC<Props> = ({ caseId }) => {
 
   return (
     <div className="case-detail">
+      <Helmet>
+        <title>{caseId} — Case Detail — PAVS</title>
+        <meta name="description" content={`Clinical details, phenotypes, and variants for case ${caseId} in the PAVS database.`} />
+      </Helmet>
       <div className="case-header">
         <h2>{caseId}</h2>
         <SourceBadge source={source} />
@@ -287,7 +293,7 @@ const CaseDetail: React.FC<Props> = ({ caseId }) => {
               <div className="variant-header">
                 {v.gene && (
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                    <a href={`/?gene=${encodeURIComponent(v.gene)}`} className="gene-link bold">{v.gene}</a>
+                    <Link to={`/gene?gene=${encodeURIComponent(v.gene)}`} className="gene-link bold">{v.gene}</Link>
                     <a href={`https://www.genecards.org/cgi-bin/carddisp.pl?gene=${v.gene}`}
                        target="_blank" rel="noopener noreferrer" className="gene-ext-link" title="Open in GeneCards">
                       ↗

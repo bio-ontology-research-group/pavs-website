@@ -24,6 +24,7 @@ import time
 import urllib.parse
 import urllib.request
 from collections import defaultdict
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -156,18 +157,29 @@ disease_hpo_cache: Dict[str, List[str]] = {}   # "OMIM:272200" → [HP:NNNNNNN, 
 # SPARQL helpers
 # ---------------------------------------------------------------------------
 
-def sparql_select(query: str, retries: int = 3) -> List[Dict[str, Any]]:
-    """Execute a SELECT query and return list of binding dicts."""
+@lru_cache(maxsize=1024)
+def _cached_sparql_select(query: str) -> str:
+    """Internal cached SPARQL executor. Returns JSON string of bindings."""
     encoded = urllib.parse.urlencode({"query": query, "format": "application/sparql-results+json"})
     url = f"{SPARQL_ENDPOINT}?{encoded}"
+    
+    # We don't do retries inside the cached function because we want to cache 
+    # only successful results. If it fails, it raises and isn't cached.
+    with urllib.request.urlopen(url, timeout=60) as resp:
+        data = json.loads(resp.read())
+        bindings = [
+            {k: v.get("value") for k, v in row.items()}
+            for row in data.get("results", {}).get("bindings", [])
+        ]
+        return json.dumps(bindings)
+
+
+def sparql_select(query: str, retries: int = 3) -> List[Dict[str, Any]]:
+    """Execute a SELECT query and return list of binding dicts (cached)."""
     for attempt in range(retries):
         try:
-            with urllib.request.urlopen(url, timeout=60) as resp:
-                data = json.loads(resp.read())
-                return [
-                    {k: v.get("value") for k, v in row.items()}
-                    for row in data.get("results", {}).get("bindings", [])
-                ]
+            result_json = _cached_sparql_select(query)
+            return json.loads(result_json)
         except Exception as e:
             if attempt == retries - 1:
                 log.error(f"SPARQL query failed: {e}\nQuery: {query[:200]}")
@@ -347,26 +359,22 @@ def _load_clinvar_cases(
     return cases
 
 
-def _load_gene_disease(tsv_path: Path, disease_labels: Dict[str, str]) -> Dict[str, List[str]]:
-    """Parse genes_to_disease.txt → {gene_symbol → [disease_label, ...]}."""
-    result: Dict[str, List[str]] = defaultdict(list)
+def _fetch_gene_disease_cache(disease_labels: Dict[str, str]) -> Dict[str, List[str]]:
+    """Fetch all gene→disease associations from the KG."""
+    result = defaultdict(list)
     try:
-        with open(tsv_path, encoding="utf-8") as fh:
-            for line in fh:
-                if line.startswith("ncbi_gene_id") or line.startswith("#"):
-                    continue
-                parts = line.rstrip("\n").split("\t")
-                if len(parts) < 4:
-                    continue
-                gene = parts[1].strip()
-                disease_id = parts[3].strip()   # e.g. OMIM:272200
-                if gene and disease_id:
-                    label = disease_labels.get(disease_id, disease_id)
-                    if label not in result[gene]:
-                        result[gene].append(label)
-        log.info(f"  Loaded gene→disease for {len(result)} genes")
+        rows = sparql_select(Q.get_all_gene_diseases())
+        for row in rows:
+            gene = row.get("gene")
+            did = row.get("disease")
+            if gene and did:
+                label = disease_labels.get(did, did)
+                display = f"{label} ({did})" if label != did else did
+                if display not in result[gene]:
+                    result[gene].append(display)
+        log.info(f"  Fetched gene→disease for {len(result)} genes from KG")
     except Exception as e:
-        log.warning(f"Could not load gene→disease from {tsv_path}: {e}")
+        log.warning(f"Could not fetch gene→disease from KG: {e}")
     return dict(result)
 
 
@@ -544,9 +552,8 @@ async def startup():
     else:
         log.warning(f"  ClinVar VCF not found at {clinvar_vcf}, skipping")
 
-    log.info("Loading gene→disease map …")
-    gene_disease_tsv = DATA_DIR / "reference" / "genes_to_disease.txt"
-    gene_disease_cache.update(_load_gene_disease(gene_disease_tsv, disease_label_cache))
+    log.info("Loading gene→disease map from KG …")
+    gene_disease_cache.update(_fetch_gene_disease_cache(disease_label_cache))
 
     log.info("Loading Arabic HPO translations …")
     hpo_ar_cache.update(_load_hpo_arabic(HPO_TRANSLATION_PATH))
@@ -671,6 +678,7 @@ def get_hpo_term(hp_id: str):
 
     return {
         "id": hp_id,
+        "name": term_name,
         "definition": obo.get("definition", ""),
         "layperson_synonyms": layperson_synonyms,
         "synonyms": synonyms,
@@ -757,11 +765,11 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
             # Prefer an explicit label; for ClinVar cases use disease_label; otherwise raw value
             disease_display = case.get("disease_label") or disease_raw
 
-            # Suggested disease for Saudi cases that have no explicit diagnosis
+            # Suggested diseases for any case that has a gene
             suggested_disease = ""
-            if is_saudi and not disease_raw and gene:
+            if gene:
                 assoc = gene_disease_cache.get(gene, [])
-                if 1 <= len(assoc) <= 3:
+                if assoc:
                     suggested_disease = "; ".join(assoc)
 
             results.append({

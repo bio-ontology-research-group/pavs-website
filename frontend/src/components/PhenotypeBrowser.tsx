@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import SourceBadge from './SourceBadge';
 
@@ -123,10 +125,10 @@ const CaseTable: React.FC<{ cases: CaseResult[] }> = ({ cases }) => (
       <tbody>
         {cases.map(c => (
           <tr key={c.id}>
-            <td><a href={`/case/${encodeURIComponent(c.id)}`}>{c.id}</a></td>
+            <td><Link to={`/case/${encodeURIComponent(c.id)}`}>{c.id}</Link></td>
             <td>
               {c.gene
-                ? <a href={`/?gene=${encodeURIComponent(c.gene)}`} className="gene-link">{c.gene}</a>
+                ? <Link to={`/gene?gene=${encodeURIComponent(c.gene)}`} className="gene-link">{c.gene}</Link>
                 : '—'}
             </td>
             <td>{c.disease || '—'}</td>
@@ -144,6 +146,7 @@ const CaseTable: React.FC<{ cases: CaseResult[] }> = ({ cases }) => (
 const PhenotypeBrowser: React.FC = () => {
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === 'ar';
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Tree state
   const [childrenMap, setChildrenMap] = useState<Record<string, HpoNode[]>>({});
@@ -157,42 +160,29 @@ const PhenotypeBrowser: React.FC = () => {
   const [casesLoading, setCasesLoading] = useState(false);
 
   // Toggles for case sources
-  const [includeChildren, setIncludeChildren] = useState(true);
-  const [includeDDD, setIncludeDDD] = useState(false);
-  const [includeLiterature, setIncludeLiterature] = useState(false);
+  const [includeChildren, setIncludeChildren] = useState(searchParams.get('children') !== 'false');
+  const [includeDDD, setIncludeDDD] = useState(searchParams.get('ddd') === 'true');
+  const [includeLiterature, setIncludeLiterature] = useState(searchParams.get('literature') === 'true');
+
+  const isFirstRender = useRef(true);
 
   const fetchChildren = useCallback(async (hp_id: string) => {
-    if (childrenMap[hp_id] !== undefined) return; // already fetched
+    // Check if childrenMap[hp_id] is already fetched
     setLoadingNodes(prev => new Set(prev).add(hp_id));
     try {
       const res = await axios.get(`${API}/api/hpo-children/${encodeURIComponent(hp_id)}`);
       setChildrenMap(prev => ({ ...prev, [hp_id]: res.data }));
+      return res.data;
     } catch {
       setChildrenMap(prev => ({ ...prev, [hp_id]: [] }));
+      return [];
     } finally {
       setLoadingNodes(prev => { const next = new Set(prev); next.delete(hp_id); return next; });
     }
-  }, [childrenMap]);
-
-  // Load root children on mount
-  useEffect(() => {
-    fetchChildren(ROOT_ID).then(() => {
-      setExpanded(new Set([ROOT_ID]));
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleToggle = useCallback(async (id: string) => {
-    if (!expanded.has(id)) {
-      // Expand: fetch children first if needed
-      await fetchChildren(id);
-      setExpanded(prev => new Set(prev).add(id));
-    } else {
-      setExpanded(prev => { const next = new Set(prev); next.delete(id); return next; });
-    }
-  }, [expanded, fetchChildren]);
+  }, []);
 
   const fetchCases = useCallback(async (
-    node: HpoNode,
+    hp_id: string,
     children: boolean,
     ddd: boolean,
     lit: boolean,
@@ -200,7 +190,7 @@ const PhenotypeBrowser: React.FC = () => {
     setCasesLoading(true);
     setTermCases([]);
     try {
-      const res = await axios.get(`${API}/api/phenotype/${encodeURIComponent(node.id)}/cases`, {
+      const res = await axios.get(`${API}/api/phenotype/${encodeURIComponent(hp_id)}/cases`, {
         params: { include_children: children, include_ddd: ddd, include_literature: lit, limit: 1000 },
       });
       setTermCases(res.data);
@@ -211,27 +201,80 @@ const PhenotypeBrowser: React.FC = () => {
     }
   }, []);
 
+  // Load root children on mount
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      fetchChildren(ROOT_ID).then(() => {
+        setExpanded(new Set([ROOT_ID]));
+      });
+
+      const hpId = searchParams.get('hp');
+      if (hpId) {
+        // Fetch term detail for the selected HP in URL
+        axios.get(`${API}/api/hpo/${encodeURIComponent(hpId)}`).then(res => {
+          const node: HpoNode = {
+            id: res.data.id,
+            label: res.data.name,
+            arabic_label: res.data.arabic_label,
+            case_count: 0, // Not available from basic API
+            saudi_case_count: 0,
+            child_count: 0
+          };
+          setSelected(node);
+          setTermEnrichment(res.data);
+          fetchCases(hpId, includeChildren, includeDDD, includeLiterature);
+        }).catch(() => {});
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleToggle = useCallback(async (id: string) => {
+    if (!expanded.has(id)) {
+      // Expand: fetch children first if needed
+      if (childrenMap[id] === undefined) {
+        await fetchChildren(id);
+      }
+      setExpanded(prev => new Set(prev).add(id));
+    } else {
+      setExpanded(prev => { const next = new Set(prev); next.delete(id); return next; });
+    }
+  }, [expanded, childrenMap, fetchChildren]);
+
   const handleSelect = useCallback((node: HpoNode) => {
     setSelected(node);
     setTermEnrichment(null);
-    fetchCases(node, includeChildren, includeDDD, includeLiterature);
+    const nextParams: any = { hp: node.id };
+    if (!includeChildren) nextParams.children = 'false';
+    if (includeDDD) nextParams.ddd = 'true';
+    if (includeLiterature) nextParams.literature = 'true';
+    setSearchParams(nextParams);
+
+    fetchCases(node.id, includeChildren, includeDDD, includeLiterature);
     axios.get(`${API}/api/hpo/${encodeURIComponent(node.id)}`)
       .then(res => setTermEnrichment(res.data))
       .catch(() => {});
-  }, [includeChildren, includeDDD, includeLiterature, fetchCases]);
+  }, [includeChildren, includeDDD, includeLiterature, fetchCases, setSearchParams]);
 
   const handleToggleOption = (
     setter: React.Dispatch<React.SetStateAction<boolean>>,
     currentValue: boolean,
-    key: 'children' | 'ddd' | 'lit',
+    key: 'children' | 'ddd' | 'literature',
   ) => {
     const newVal = !currentValue;
     setter(newVal);
     if (selected) {
       const c = key === 'children' ? newVal : includeChildren;
       const d = key === 'ddd' ? newVal : includeDDD;
-      const l = key === 'lit' ? newVal : includeLiterature;
-      fetchCases(selected, c, d, l);
+      const l = key === 'literature' ? newVal : includeLiterature;
+      
+      const nextParams: any = { hp: selected.id };
+      if (!c) nextParams.children = 'false';
+      if (d) nextParams.ddd = 'true';
+      if (l) nextParams.literature = 'true';
+      setSearchParams(nextParams);
+
+      fetchCases(selected.id, c, d, l);
     }
   };
 
@@ -245,6 +288,11 @@ const PhenotypeBrowser: React.FC = () => {
 
   return (
     <div className="hpo-browser-layout">
+      <Helmet>
+        <title>{selected ? `${selected.id} — Phenotype Browser` : t('nav.phenotypeBrowser')} — PAVS</title>
+        <meta name="description" content={selected ? `Browse clinical cases matching phenotype ${selected.label} (${selected.id}) in Saudi Arabia.` : "Hierarchical browser for HPO phenotypes associated with Saudi clinical cases."} />
+      </Helmet>
+
       {/* Left: HPO tree */}
       <div className="hpo-tree-panel">
         <div className="hpo-tree-header">
@@ -324,7 +372,7 @@ const PhenotypeBrowser: React.FC = () => {
               </label>
               <label className="toggle-label">
                 <input type="checkbox" checked={includeLiterature}
-                  onChange={() => handleToggleOption(setIncludeLiterature, includeLiterature, 'lit')} />
+                  onChange={() => handleToggleOption(setIncludeLiterature, includeLiterature, 'literature')} />
                 {' '}{t('badges.literature')}
               </label>
             </div>

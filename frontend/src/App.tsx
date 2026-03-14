@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Routes, Route, NavLink, Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import './i18n';
 import './App.css';
 import PhenotypeSearch from './components/PhenotypeSearch';
@@ -11,32 +13,23 @@ import SparqlExplorer from './components/SparqlExplorer';
 import AboutPage from './components/AboutPage';
 import CaseDetail from './components/CaseDetail';
 
-type TabId = 'phenotype' | 'variant' | 'disease' | 'gene' | 'phenotype-browser' | 'sparql' | 'about';
-
 const API = import.meta.env.VITE_API_URL ?? '';
+
+const CaseDetailWrapper: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  return (
+    <>
+      <button className="back-btn" onClick={() => navigate(-1)}>← Back</button>
+      {id && <CaseDetail caseId={id} />}
+    </>
+  );
+};
 
 const App: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<TabId>('phenotype');
-  const [caseId, setCaseId] = useState<string | null>(null);
-  const [initialGene, setInitialGene] = useState<string>('');
-
-  // Simple client-side routing for /case/:id; gene navigation via ?gene= param
-  useEffect(() => {
-    const path = window.location.pathname;
-    const caseMatch = path.match(/^\/case\/(.+)/);
-    if (caseMatch) {
-      setCaseId(decodeURIComponent(caseMatch[1]));
-      return;
-    }
-    // Check for ?gene= URL search param (used by gene links in all views)
-    const params = new URLSearchParams(window.location.search);
-    const gene = params.get('gene');
-    if (gene) {
-      setActiveTab('gene');
-      setInitialGene(decodeURIComponent(gene));
-    }
-  }, []);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const switchLang = () => {
     const next = i18n.language === 'ar' ? 'en' : 'ar';
@@ -53,45 +46,36 @@ const App: React.FC = () => {
     document.documentElement.lang = lang;
   }, [i18n.language]);
 
-  // Tab click: always navigate away from case view and update URL
-  const handleTabClick = (tabId: TabId) => {
-    setActiveTab(tabId);
-    if (caseId) {
-      setCaseId(null);
-      window.history.pushState({}, '', '/');
-    }
-  };
-
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'phenotype',         label: t('nav.phenotype') },
-    { id: 'variant',           label: t('nav.variant') },
-    { id: 'disease',           label: t('nav.disease') },
-    { id: 'gene',              label: t('nav.gene') },
-    { id: 'phenotype-browser', label: t('nav.phenotypeBrowser') },
-    { id: 'sparql',            label: t('nav.sparql') },
-    { id: 'about',             label: t('nav.about') },
+  const tabs = [
+    { id: 'phenotype',         path: '/',                  label: t('nav.phenotype') },
+    { id: 'variant',           path: '/variant',           label: t('nav.variant') },
+    { id: 'disease',           path: '/disease',           label: t('nav.disease') },
+    { id: 'gene',              path: '/gene',              label: t('nav.gene') },
+    { id: 'phenotype-browser', path: '/phenotype-browser', label: t('nav.phenotypeBrowser') },
+    { id: 'sparql',            path: '/sparql',            label: t('nav.sparql') },
+    { id: 'about',             path: '/about',             label: t('nav.about') },
   ];
 
   return (
     <div className="app">
+      <Helmet>
+        <title>PAVS — Phenotype-Associated Variants in Saudi Arabia</title>
+        <meta name="description" content="A comprehensive database of phenotype-associated variants in Saudi Arabia, facilitating genomic research and diagnostics." />
+      </Helmet>
+
       <nav className="navbar">
-        <a href="/" className="nav-brand" onClick={(e) => {
-          e.preventDefault();
-          setActiveTab('phenotype');
-          setCaseId(null);
-          window.history.pushState({}, '', '/');
-        }}>
+        <Link to="/" className="nav-brand">
           <img src="/logo.svg" alt="PAVS Logo" height="36" />
-        </a>
+        </Link>
         <div className="nav-tabs">
           {tabs.map(tab => (
-            <button
+            <NavLink
               key={tab.id}
-              className={`nav-tab ${!caseId && activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => handleTabClick(tab.id)}
+              to={tab.path}
+              className={({ isActive }) => `nav-tab ${isActive ? 'active' : ''}`}
             >
               {tab.label}
-            </button>
+            </NavLink>
           ))}
         </div>
         <div className="nav-right">
@@ -106,22 +90,16 @@ const App: React.FC = () => {
       </nav>
 
       <main className="main-content">
-        {caseId ? (
-          <>
-            <button className="back-btn" onClick={() => { setCaseId(null); window.history.back(); }}>← Back</button>
-            <CaseDetail caseId={caseId} />
-          </>
-        ) : (
-          <>
-            {activeTab === 'phenotype'         && <PhenotypeSearch />}
-            {activeTab === 'variant'           && <VariantLookup />}
-            {activeTab === 'disease'           && <DiseaseBrowser />}
-            {activeTab === 'gene'              && <GeneBrowser initialGene={initialGene} />}
-            {activeTab === 'phenotype-browser' && <PhenotypeBrowser />}
-            {activeTab === 'sparql'            && <SparqlExplorer />}
-            {activeTab === 'about'             && <AboutPage />}
-          </>
-        )}
+        <Routes>
+          <Route path="/" element={<PhenotypeSearch />} />
+          <Route path="/variant" element={<VariantLookup />} />
+          <Route path="/disease" element={<DiseaseBrowser />} />
+          <Route path="/gene" element={<GeneBrowser />} />
+          <Route path="/phenotype-browser" element={<PhenotypeBrowser />} />
+          <Route path="/sparql" element={<SparqlExplorer />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/case/:id" element={<CaseDetailWrapper />} />
+        </Routes>
       </main>
 
       <footer className="footer">

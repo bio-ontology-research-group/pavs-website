@@ -466,3 +466,17 @@ SELECT ?diseaseUri ?hpo ?hpoLabel WHERE {{
   BIND(REPLACE(STR(?hpoTerm), ".*HP_", "HP:") AS ?hpo)
 }}
 """
+
+
+def get_all_gene_diseases() -> str:
+    """Return all gene-disease associations."""
+    return f"""
+{PREFIXES}
+SELECT DISTINCT ?gene ?disease WHERE {{
+  GRAPH <{GRAPH_GENES}> {{
+    ?geneUri pavs:relatedDisease ?diseaseUri .
+    BIND(STRAFTER(STR(?geneUri), "hgnc.symbol/") AS ?gene)
+    BIND(REPLACE(REPLACE(REPLACE(STR(?diseaseUri), ".*omim.org/entry/", "OMIM:"), ".*MONDO_", "MONDO:"), ".*Orphanet_", "Orphanet:") AS ?disease)
+  }}
+}}
+"""

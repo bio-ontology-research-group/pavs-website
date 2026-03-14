@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import SourceBadge from './SourceBadge';
 
@@ -102,27 +104,31 @@ function PredBadge({ label, val }: { label: string; val: string }) {
 
 const VariantLookup: React.FC = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<SearchTab>('gene');
-  const [gene, setGene] = useState('');
-  const [rsid, setRsid] = useState('');
-  const [hgvs, setHgvs] = useState('');
-  const [acmgClass, setAcmgClass] = useState('Pathogenic');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const [activeTab, setActiveTab] = useState<SearchTab>((searchParams.get('tab') as SearchTab) || 'gene');
+  const [gene, setGene] = useState(searchParams.get('gene') || '');
+  const [rsid, setRsid] = useState(searchParams.get('rsid') || '');
+  const [hgvs, setHgvs] = useState(searchParams.get('hgvs') || '');
+  const [acmgClass, setAcmgClass] = useState(searchParams.get('acmg') || 'Pathogenic');
+  
   const [results, setResults] = useState<VariantResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const isFirstRender = useRef(true);
 
-  const handleSearch = async () => {
+  const performSearch = async (tab: SearchTab, vals: any) => {
     setLoading(true);
     setError('');
     setResults([]);
     setExpandedRows(new Set());
     try {
       const params: Record<string, string> = {};
-      if (activeTab === 'gene') params.gene = gene;
-      else if (activeTab === 'rsid') params.rsid = rsid;
-      else if (activeTab === 'hgvs') params.hgvs = hgvs;
-      else if (activeTab === 'acmg') params.acmg = acmgClass;
+      if (tab === 'gene') params.gene = vals.gene;
+      else if (tab === 'rsid') params.rsid = vals.rsid;
+      else if (tab === 'hgvs') params.hgvs = vals.hgvs;
+      else if (tab === 'acmg') params.acmg = vals.acmg;
 
       const res = await axios.get(`${API}/api/search/variant`, { params });
       setResults(res.data);
@@ -131,6 +137,32 @@ const VariantLookup: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      const tab = searchParams.get('tab') as SearchTab;
+      if (tab) {
+        performSearch(tab, {
+          gene: searchParams.get('gene'),
+          rsid: searchParams.get('rsid'),
+          hgvs: searchParams.get('hgvs'),
+          acmg: searchParams.get('acmg')
+        });
+      }
+    }
+  }, [searchParams]);
+
+  const handleSearch = () => {
+    const nextParams: any = { tab: activeTab };
+    if (activeTab === 'gene') nextParams.gene = gene;
+    else if (activeTab === 'rsid') nextParams.rsid = rsid;
+    else if (activeTab === 'hgvs') nextParams.hgvs = hgvs;
+    else if (activeTab === 'acmg') nextParams.acmg = acmgClass;
+    
+    setSearchParams(nextParams);
+    performSearch(activeTab, { gene, rsid, hgvs, acmg: acmgClass });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -150,6 +182,11 @@ const VariantLookup: React.FC = () => {
 
   return (
     <div className="search-panel">
+      <Helmet>
+        <title>{t('nav.variant')} — PAVS</title>
+        <meta name="description" content="Lookup Saudi variants by gene symbol, rsID, HGVS notation, or ACMG pathogenicity class." />
+      </Helmet>
+
       <h2>{t('nav.variant')}</h2>
 
       <div className="tab-bar">
@@ -225,13 +262,13 @@ const VariantLookup: React.FC = () => {
                       )}
                     </td>
                     <td>
-                      <a href={`/case/${encodeURIComponent(r.id || r.case || '')}`} className="case-link">
+                      <Link to={`/case/${encodeURIComponent(r.id || r.case || '')}`} className="case-link">
                         {r.id || r.case || '—'}
-                      </a>
+                      </Link>
                     </td>
                     <td>
                       {r.gene ? (
-                        <a href={`/?gene=${encodeURIComponent(r.gene)}`} className="gene-link">{r.gene}</a>
+                        <Link to={`/gene?gene=${encodeURIComponent(r.gene)}`} className="gene-link">{r.gene}</Link>
                       ) : '—'}
                     </td>
                     <td className="mono">{r.hgvsC || '—'}</td>

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import SourceBadge from './SourceBadge';
 
@@ -16,17 +18,19 @@ interface DiseaseResult {
 
 const DiseaseBrowser: React.FC = () => {
   const { t } = useTranslation();
-  const [query, setQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get('q') || '');
   const [results, setResults] = useState<DiseaseResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isFirstRender = useRef(true);
 
-  const handleSearch = async () => {
-    if (!query.trim()) return;
+  const performSearch = async (q: string) => {
+    if (!q.trim()) return;
     setLoading(true);
     setError('');
     try {
-      const res = await axios.get(`${API}/api/search/disease`, { params: { q: query.trim() } });
+      const res = await axios.get(`${API}/api/search/disease`, { params: { q: q.trim() } });
       setResults(res.data);
     } catch (e: any) {
       setError(e.message);
@@ -35,8 +39,27 @@ const DiseaseBrowser: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      const q = searchParams.get('q');
+      if (q) performSearch(q);
+    }
+  }, [searchParams]);
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    setSearchParams({ q: query.trim() });
+    performSearch(query);
+  };
+
   return (
     <div className="search-panel">
+      <Helmet>
+        <title>{t('nav.disease')} — PAVS</title>
+        <meta name="description" content="Browse clinical cases by disease name or OMIM ID in the PAVS database." />
+      </Helmet>
+
       <h2>{t('nav.disease')}</h2>
       <div className="form-group inline">
         <input
@@ -69,9 +92,9 @@ const DiseaseBrowser: React.FC = () => {
               {results.map((r, idx) => (
                 <tr key={idx}>
                   <td>
-                    <a href={`/case/${encodeURIComponent(r.id || r.case || '')}`} className="case-link">
+                    <Link to={`/case/${encodeURIComponent(r.id || r.case || '')}`} className="case-link">
                       {r.id || r.case || '—'}
-                    </a>
+                    </Link>
                   </td>
                   <td>{r.disease || '—'}</td>
                   <td>{r.gene || '—'}</td>

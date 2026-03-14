@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 
 const API = import.meta.env.VITE_API_URL ?? '';
@@ -162,6 +163,11 @@ const SparqlExplorer: React.FC = () => {
 
   return (
     <div className="sparql-explorer">
+      <Helmet>
+        <title>{t('sparql.title')} — PAVS</title>
+        <meta name="description" content="Directly query the PAVS knowledge graph using SPARQL. Explore cases, variants, and phenotypes using a powerful query interface." />
+      </Helmet>
+
       <h2>{t('sparql.title')}</h2>
       <p className="sparql-hint">{t('sparql.hint')}</p>
 

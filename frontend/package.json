@@ -9,13 +9,16 @@
     "i18next-browser-languagedetector": "^7",
     "react": "^18",
     "react-dom": "^18",
+    "react-helmet-async": "^3.0.0",
     "react-i18next": "^14",
     "react-markdown": "^9",
+    "react-router-dom": "^7.13.1",
     "react-select": "^5.8"
   },
   "devDependencies": {
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^4",
     "typescript": "^5",
     "vite": "^6.4.1"

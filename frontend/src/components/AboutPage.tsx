@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet-async';
 
 const AboutPage: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -19,6 +20,10 @@ const AboutPage: React.FC = () => {
 
   return (
     <div className="about-page">
+      <Helmet>
+        <title>{t('nav.about')} — PAVS</title>
+        <meta name="description" content="About PAVS (Phenotype-Associated Variants in Saudi Arabia) — project overview, team, and data sources." />
+      </Helmet>
       <ReactMarkdown>{content}</ReactMarkdown>
     </div>
   );

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import SourceBadge from './SourceBadge';
 
@@ -49,10 +51,6 @@ interface DiseaseInfo {
   omim_url: string;
   clinvar_url: string;
   hpo_terms: HpoTerm[];
-}
-
-interface Props {
-  initialGene?: string;
 }
 
 // ─── Expression bar chart ────────────────────────────────────────────────────
@@ -137,22 +135,24 @@ function localizeAcmg(acmg: string, t: any): { label: string; className: string 
   return { label, className: `acmg-${key.replace(/_/g, '-')}` };
 }
 
-const GeneBrowser: React.FC<Props> = ({ initialGene = '' }) => {
+const GeneBrowser: React.FC = () => {
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [geneList, setGeneList] = useState<GeneListItem[]>([]);
   const [geneListLoading, setGeneListLoading] = useState(true);
   const [filter, setFilter] = useState('');
 
-  const [selectedGene, setSelectedGene] = useState<string>(initialGene);
+  const selectedGene = searchParams.get('gene') || '';
+  const showDDD = searchParams.get('ddd') === 'true';
+  const showLiterature = searchParams.get('literature') === 'true';
+
   const [geneDetail, setGeneDetail] = useState<GeneDetail | null>(null);
   const [geneCases, setGeneCases] = useState<GeneCaseResult[]>([]);
   const [geneDiseases, setGeneDiseases] = useState<DiseaseInfo[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
 
-  const [showDDD, setShowDDD] = useState(false);
-  const [showLiterature, setShowLiterature] = useState(false);
   const [expandedDiseases, setExpandedDiseases] = useState<Set<string>>(new Set());
 
   const selectedRef = useRef<HTMLDivElement | null>(null);
@@ -164,12 +164,26 @@ const GeneBrowser: React.FC<Props> = ({ initialGene = '' }) => {
       .finally(() => setGeneListLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (initialGene) {
-      setSelectedGene(initialGene);
-      setFilter('');
-    }
-  }, [initialGene]);
+  const setSelectedGene = (symbol: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (symbol) next.set('gene', symbol);
+    else next.delete('gene');
+    setSearchParams(next);
+  };
+
+  const setShowDDD = (val: boolean) => {
+    const next = new URLSearchParams(searchParams);
+    if (val) next.set('ddd', 'true');
+    else next.delete('ddd');
+    setSearchParams(next);
+  };
+
+  const setShowLiterature = (val: boolean) => {
+    const next = new URLSearchParams(searchParams);
+    if (val) next.set('literature', 'true');
+    else next.delete('literature');
+    setSearchParams(next);
+  };
 
   useEffect(() => {
     if (!selectedGene) return;
@@ -203,7 +217,7 @@ const GeneBrowser: React.FC<Props> = ({ initialGene = '' }) => {
     axios.get(`${API}/api/gene/${encodeURIComponent(selectedGene)}/cases`, { params })
       .then(res => setGeneCases(res.data))
       .catch(() => {});
-  }, [showDDD, showLiterature]);
+  }, [showDDD, showLiterature, selectedGene]);
 
   useEffect(() => {
     if (selectedRef.current) {
@@ -234,6 +248,10 @@ const GeneBrowser: React.FC<Props> = ({ initialGene = '' }) => {
 
   return (
     <div className="gene-browser-layout">
+      <Helmet>
+        <title>{selectedGene ? `${selectedGene} — Gene Browser` : t('nav.gene')} — PAVS</title>
+        <meta name="description" content={selectedGene ? `Genomic and clinical details for gene ${selectedGene} in the Saudi population.` : "Browse genes associated with clinical cases in Saudi Arabia."} />
+      </Helmet>
       {/* Left panel */}
       <div className="gene-list-panel">
         <div className="gene-list-filter">
@@ -421,13 +439,13 @@ const GeneBrowser: React.FC<Props> = ({ initialGene = '' }) => {
                     {displayedCases.map((r, idx) => (
                       <tr key={idx}>
                         <td>
-                          <a href={`/case/${encodeURIComponent(r.id || r.case || '')}`} className="case-link">
+                          <Link to={`/case/${encodeURIComponent(r.id || r.case || '')}`} className="case-link">
                             {r.id || r.case || '—'}
-                          </a>
+                          </Link>
                         </td>
                         <td>
                           {r.gene
-                            ? <a href={`/?gene=${encodeURIComponent(r.gene)}`} className="gene-link bold">{r.gene}</a>
+                            ? <Link to={`/gene?gene=${encodeURIComponent(r.gene)}`} className="gene-link bold">{r.gene}</Link>
                             : '—'}
                         </td>
                         <td className="mono">{r.hgvsC || '—'}</td>
