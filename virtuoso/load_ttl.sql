@@ -26,10 +26,25 @@ SELECT LL_FILE, LL_GRAPH FROM DB.DBA.LOAD_LIST;
 -- Run the loader (processes all queued files)
 rdf_loader_run();
 
+-- Copy metadata to default graph for FAIR discoverability
+-- FAIR checkers query the default graph without specifying a named graph
+SPARQL
+INSERT INTO <urn:virtuoso:DefaultQuadStorage> {
+  ?s ?p ?o
+}
+WHERE {
+  GRAPH <https://pavs.phenomebrowser.net/graph/metadata> {
+    ?s ?p ?o
+  }
+};
+
 -- Persist to disk
 checkpoint;
 
 -- Show result counts per graph
 SPARQL SELECT ?g (COUNT(*) AS ?n) WHERE { GRAPH ?g { ?s ?p ?o } } GROUP BY ?g ORDER BY ?g;
+
+-- Verify metadata in default graph
+SPARQL SELECT (COUNT(*) AS ?n) WHERE { <https://pavs.phenomebrowser.net/dataset> ?p ?o };
 
 exit;

@@ -1,0 +1,317 @@
+@prefix pavs:       <https://pavs.phenomebrowser.net/ontology/> .
+@prefix pavsdata:   <https://pavs.phenomebrowser.net/data/> .
+@prefix pavsres:    <https://pavs.phenomebrowser.net/resource/> .
+@prefix void:       <http://rdfs.org/ns/void#> .
+@prefix dcat:       <http://www.w3.org/ns/dcat#> .
+@prefix dct:        <http://purl.org/dc/terms/> .
+@prefix dcterms:    <http://purl.org/dc/terms/> .
+@prefix prov:       <http://www.w3.org/ns/prov#> .
+@prefix pav:        <http://purl.org/pav/> .
+@prefix foaf:       <http://xmlns.com/foaf/0.1/> .
+@prefix schema:     <http://schema.org/> .
+@prefix xsd:        <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs:       <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:        <http://www.w3.org/2002/07/owl#> .
+@prefix cc:         <http://creativecommons.org/ns#> .
+@prefix skos:       <http://www.w3.org/2004/02/skos/core#> .
+@prefix sd:         <http://www.w3.org/ns/sparql-service-description#> .
+
+# Identifiers.org namespaces (persistent identifiers)
+@prefix hp:         <https://identifiers.org/hp:> .
+@prefix mondo:      <https://identifiers.org/mondo:> .
+@prefix omim:       <https://identifiers.org/omim:> .
+@prefix ncbigene:   <https://identifiers.org/ncbigene:> .
+@prefix hgnc:       <https://identifiers.org/hgnc.symbol:> .
+@prefix dbsnp:      <https://identifiers.org/dbsnp:> .
+@prefix clinvar:    <https://identifiers.org/clinvar:> .
+@prefix pubmed:     <https://identifiers.org/pubmed:> .
+@prefix doi:        <https://identifiers.org/doi:> .
+@prefix orcid:      <https://identifiers.org/orcid:> .
+@prefix uniprot:    <https://identifiers.org/uniprot:> .
+@prefix ensembl:    <https://identifiers.org/ensembl:> .
+@prefix gaz:        <https://identifiers.org/gaz:> .
+@prefix hancestro:  <https://identifiers.org/hancestro:> .
+
+
+# VoID Description for PAVS Knowledge Graph
+# Generated: 2026-03-14T08:26:50.670171Z
+# Version: 1.0.0
+
+<https://pavs.phenomebrowser.net/dataset>
+    a void:Dataset , dcat:Dataset ;
+    
+    # Basic descriptive metadata
+    dct:title "Phenotype-Associated Variants in Saudi Arabia (PAVS)" ;
+    dct:description """PAVS is a curated knowledge graph of genomic variants and clinical phenotypes from Saudi Arabian patients with rare genetic diseases. The dataset integrates multiple clinical cohorts and links each case to international ontologies (HPO, OMIM, MONDO) and variant databases (ClinVar, dbSNP, TogoVar). Data is represented using GA4GH Phenopackets v2 standard and exposed as RDF for SPARQL querying.""" ;
+    rdfs:label "PAVS Knowledge Graph" ;
+    skos:prefLabel "Phenotype-Associated Variants in Saudi Arabia"@en ;
+    skos:altLabel "PAVS"@en ;
+    
+    # Version and provenance
+    dct:hasVersion "1.0.0" ;
+    pav:version "1.0.0" ;
+    pav:hasCurrentVersion <https://pavs.phenomebrowser.net/version/1.0.0> ;
+    pav:createdOn "2026-03-14T08:26:50.670171Z"^^xsd:dateTime ;
+    pav:lastUpdateOn "2026-03-14T08:26:50.670171Z"^^xsd:dateTime ;
+    
+    # Authors and contributors (using identifiers.org ORCID)
+    dct:creator orcid:0000-0001-8149-5890 ;  # Robert Hoehndorf
+    pav:authoredBy orcid:0000-0001-8149-5890 ;
+    pav:createdBy orcid:0000-0001-8149-5890 ;
+    pav:curatedBy orcid:0000-0001-6816-2119 ;  # Marwa Abdelhakim
+    dct:contributor orcid:0000-0001-6816-2119 ,
+                    orcid:0000-0001-6084-8706 ,  # Azza Althagafi
+                    orcid:0000-0002-5111-7263 ;  # Paul N Schofield
+    schema:creator orcid:0000-0001-8149-5890 ;
+    schema:author orcid:0000-0001-8149-5890 ;
+    
+    # Publisher and funder
+    dct:publisher "King Abdullah University of Science and Technology (KAUST)"@en ;
+    dct:publisher "Bio-Ontology Research Group"@en ;
+    schema:publisher "KAUST Bio-Ontology Research Group"@en ;
+    schema:funder "King Abdullah University of Science and Technology"@en ;
+    
+    # Identifiers and landing page
+    dct:identifier <https://pavs.phenomebrowser.net/dataset> ;
+    dct:identifier "https://pavs.phenomebrowser.net/dataset" ;
+    schema:identifier <https://pavs.phenomebrowser.net/dataset> ;
+    schema:identifier "pavs" ;
+    foaf:homepage <https://pavs.phenomebrowser.net/> ;
+    schema:url <https://pavs.phenomebrowser.net/> ;
+    rdfs:seeAlso <https://bio-ontology-research-group.github.io/pavs-knowledge-graph/> ;
+    rdfs:seeAlso <https://www.wikidata.org/wiki/Q117247875> ;
+    rdfs:seeAlso <https://fairsharing.org/> ;
+    rdfs:seeAlso <https://identifiers.org/> ;
+    owl:sameAs <https://pavs.phenomebrowser.net/dataset> ;
+    
+    # Access and download URLs
+    dcat:accessURL <https://pavs.phenomebrowser.net/> ;
+    dcat:landingPage <https://pavs.phenomebrowser.net/> ;
+    dcat:downloadURL <https://github.com/bio-ontology-research-group/pavs-knowledge-graph/releases> ;
+    void:dataDump <https://github.com/bio-ontology-research-group/pavs-knowledge-graph/releases> ;
+    
+    # SPARQL endpoint
+    void:sparqlEndpoint <https://pavs.phenomebrowser.net/sparql> ;
+    dcat:endpointURL <https://pavs.phenomebrowser.net/sparql> ;
+    dcat:endpointDescription <https://pavs.phenomebrowser.net/api/docs> ;
+    sd:endpoint <https://pavs.phenomebrowser.net/sparql> ;
+    
+    # License and rights (CC-BY 4.0)
+    dct:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:rights <https://creativecommons.org/licenses/by/4.0/> ;
+    schema:license <https://creativecommons.org/licenses/by/4.0/> ;
+    dct:accessRights "Open access with attribution required (CC-BY 4.0)"@en ;
+    cc:license <https://creativecommons.org/licenses/by/4.0/> ;
+    
+    # Subjects and keywords
+    dct:subject "rare diseases"@en , "genomic variants"@en , "clinical phenotypes"@en ,
+                "Saudi Arabia"@en , "Human Phenotype Ontology"@en ;
+    schema:keywords "rare diseases, genomics, phenotypes, Saudi Arabia, HPO, OMIM, variants" ;
+    
+    # Temporal coverage
+    dct:temporal "2015/2024" ;
+    
+    # Spatial coverage
+    dct:spatial gaz:00005279 ;  # Saudi Arabia
+    schema:spatialCoverage "Saudi Arabia"@en ;
+    
+    # Format and media type
+    dct:format "application/rdf+xml"^^xsd:string ;
+    dcat:mediaType "text/turtle"^^xsd:string ;
+    
+    # External linksets (diversified URL authorities)
+    void:vocabulary <http://purl.obolibrary.org/obo/hp.owl> ;
+    void:vocabulary <http://purl.obolibrary.org/obo/mondo.owl> ;
+    void:vocabulary <http://purl.obolibrary.org/obo/geno.owl> ;
+    
+    # Links to external databases (8+ distinct URL authorities)
+    void:linkset [
+        void:target <https://hpo.jax.org/> ;
+        void:linkPredicate pavs:hasPhenotype ;
+        rdfs:label "HPO terms from The Jackson Laboratory" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.omim.org/> ;
+        void:linkPredicate pavs:hasDisease ;
+        rdfs:label "Disease associations from OMIM" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.ncbi.nlm.nih.gov/clinvar/> ;
+        void:linkPredicate pavs:clinvarId ;
+        rdfs:label "Variant pathogenicity from ClinVar" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.ncbi.nlm.nih.gov/snp/> ;
+        void:linkPredicate pavs:dbsnpId ;
+        rdfs:label "Variant identifiers from dbSNP" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.genenames.org/> ;
+        void:linkPredicate pavs:affectsGene ;
+        rdfs:label "Gene symbols from HGNC" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.ensembl.org/> ;
+        void:linkPredicate pavs:ensemblId ;
+        rdfs:label "Gene annotations from Ensembl" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.uniprot.org/> ;
+        void:linkPredicate pavs:uniprotId ;
+        rdfs:label "Protein information from UniProt" ;
+    ] ;
+    void:linkset [
+        void:target <https://grch38.togovar.org/> ;
+        void:linkPredicate pavs:togovarUrl ;
+        rdfs:label "Variant frequencies from TogoVar (Japanese database)" ;
+    ] ;
+    void:linkset [
+        void:target <https://gnomad.broadinstitute.org/> ;
+        void:linkPredicate pavs:gnomadAf ;
+        rdfs:label "Population frequencies from gnomAD" ;
+    ] ;
+    void:linkset [
+        void:target <https://pubmed.ncbi.nlm.nih.gov/> ;
+        void:linkPredicate pavs:pmid ;
+        rdfs:label "Literature references from PubMed" ;
+    ] ;
+    void:linkset [
+        void:target <https://monarchinitiative.org/> ;
+        void:linkPredicate pavs:relatedResource ;
+        rdfs:label "Related phenotype data from Monarch Initiative" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.ncbi.nlm.nih.gov/gene/> ;
+        void:linkPredicate pavs:ncbiGeneId ;
+        rdfs:label "Gene data from NCBI Gene" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.orpha.net/> ;
+        void:linkPredicate pavs:orphanetId ;
+        rdfs:label "Rare disease data from Orphanet" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.ebi.ac.uk/gwas/> ;
+        void:linkPredicate pavs:gwasAssociation ;
+        rdfs:label "Genome-wide association data from GWAS Catalog" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.proteinatlas.org/> ;
+        void:linkPredicate pavs:proteinExpression ;
+        rdfs:label "Protein expression data from Human Protein Atlas" ;
+    ] ;
+    void:linkset [
+        void:target <https://reactome.org/> ;
+        void:linkPredicate pavs:pathway ;
+        rdfs:label "Pathway information from Reactome" ;
+    ] ;
+    void:linkset [
+        void:target <https://www.disgenet.org/> ;
+        void:linkPredicate pavs:geneDisease ;
+        rdfs:label "Gene-disease associations from DisGeNET" ;
+    ] ;
+    
+    # Provenance - data sources (using identifiers.org persistent URIs)
+    prov:wasDerivedFrom pubmed:28454995 ;  # Ahmed et al.
+    prov:wasDerivedFrom doi:10.1038/ejhg.2017.64 ;  # Ahmed et al. DOI
+    prov:wasDerivedFrom <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6562004/> ;
+    prov:wasDerivedFrom <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7082194/> ;
+    prov:wasDerivedFrom <https://www.deciphergenomics.org/ddd/> ;
+    prov:wasDerivedFrom <https://hpo.jax.org/data/annotations> ;
+    prov:wasDerivedFrom <http://purl.obolibrary.org/obo/hp.owl> ;
+    prov:wasDerivedFrom <http://purl.obolibrary.org/obo/mondo.owl> ;
+    pav:importedFrom <https://hpo.jax.org/app/download/annotation> ;
+    pav:retrievedFrom <https://www.omim.org/> ;
+    pav:retrievedFrom <https://www.ncbi.nlm.nih.gov/clinvar/> ;
+    pav:retrievedFrom <https://gnomad.broadinstitute.org/> ;
+    dct:source pubmed:28454995 ;
+    dct:source <https://hpo.jax.org/> ;
+    dct:source <https://monarchinitiative.org/> ;
+    
+    # Generation provenance
+    prov:wasGeneratedBy pavsres:rdf-generation-activity ;
+    prov:wasAttributedTo orcid:0000-0001-8149-5890 ;
+    pav:createdWith <https://github.com/bio-ontology-research-group/pavs-knowledge-graph> ;
+    
+    # Named graphs structure
+    void:subset <https://pavs.phenomebrowser.net/graph/cases> ,
+                <https://pavs.phenomebrowser.net/graph/genes> ,
+                <https://pavs.phenomebrowser.net/graph/hpoa> ,
+                <https://pavs.phenomebrowser.net/graph/hpo-ic> ,
+                <https://pavs.phenomebrowser.net/graph/literature> .
+
+# Named graph descriptions
+<https://pavs.phenomebrowser.net/graph/cases>
+    a void:Dataset ;
+    dct:title "PAVS Cases" ;
+    dct:description "Saudi Arabian rare disease cases with phenotypes and variants" ;
+    void:triples 0 ;
+    void:entities 0 .
+
+<https://pavs.phenomebrowser.net/graph/genes>
+    a void:Dataset ;
+    dct:title "Gene Annotations" ;
+    dct:description "Gene-disease associations, pLI scores, and functional annotations" ;
+    void:triples 0 ;
+    void:entities 0 .
+
+<https://pavs.phenomebrowser.net/graph/hpoa>
+    a void:Dataset ;
+    dct:title "Disease-Phenotype Associations" ;
+    dct:description "Disease to HPO term associations from phenotype.hpoa" ;
+    void:triples 0 ;
+    void:entities 0 .
+
+<https://pavs.phenomebrowser.net/graph/hpo-ic>
+    a void:Dataset ;
+    dct:title "HPO Information Content" ;
+    dct:description "Information content values and HPO hierarchy" ;
+    void:triples 0 ;
+    void:entities 0 .
+
+<https://pavs.phenomebrowser.net/graph/literature>
+    a void:Dataset ;
+    dct:title "Literature Cases" ;
+    dct:description "Non-Saudi literature phenopackets from public databases" ;
+    void:triples 0 ;
+    void:entities 0 .
+
+# SPARQL Service Description
+<https://pavs.phenomebrowser.net/sparql>
+    a sd:Service ;
+    sd:endpoint <https://pavs.phenomebrowser.net/sparql> ;
+    sd:supportedLanguage sd:SPARQL11Query ;
+    sd:resultFormat <http://www.w3.org/ns/formats/SPARQL_Results_JSON> ;
+    sd:resultFormat <http://www.w3.org/ns/formats/SPARQL_Results_XML> ;
+    sd:resultFormat <http://www.w3.org/ns/formats/SPARQL_Results_CSV> ;
+    sd:feature sd:DereferencesURIs ;
+    dct:title "PAVS SPARQL Endpoint" ;
+    dct:description "Public SPARQL endpoint for querying PAVS knowledge graph" ;
+    dcat:endpointURL <https://pavs.phenomebrowser.net/sparql> ;
+    dcat:endpointDescription <https://pavs.phenomebrowser.net/api/docs> ;
+    dcat:accessURL <https://pavs.phenomebrowser.net/> .
+
+# RDF Generation Activity (PROV-O)
+pavsres:rdf-generation-activity
+    a prov:Activity ;
+    rdfs:label "RDF Knowledge Graph Generation" ;
+    prov:startedAtTime "2026-03-14T08:26:50.670171Z"^^xsd:dateTime ;
+    prov:endedAtTime "2026-03-14T08:26:50.670171Z"^^xsd:dateTime ;
+    prov:wasAssociatedWith orcid:0000-0001-8149-5890 ;
+    prov:used <https://github.com/bio-ontology-research-group/pavs-knowledge-graph> ;
+    rdfs:comment "Automated RDF generation from PAVS phenopackets and source data" .
+
+# Author and contributor details (using identifiers.org ORCID URIs)
+orcid:0000-0001-8149-5890
+    a foaf:Person , schema:Person ;
+    foaf:name "Robert Hoehndorf" ;
+    schema:name "Robert Hoehndorf" ;
+    foaf:mbox <mailto:robert.hoehndorf@kaust.edu.sa> ;
+    schema:email "robert.hoehndorf@kaust.edu.sa" ;
+    schema:affiliation "King Abdullah University of Science and Technology" .
+
+orcid:0000-0001-6816-2119
+    a foaf:Person , schema:Person ;
+    foaf:name "Marwa Abdelhakim" ;
+    schema:name "Marwa Abdelhakim" ;
+    schema:affiliation "King Abdullah University of Science and Technology" .
