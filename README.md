@@ -1,6 +1,6 @@
 # PAVS Website
 
-Web interface for exploring the PAVS (Phenotypic and Variant Standardization) knowledge graph of Saudi Arabian rare disease patients.
+Web interface for exploring the PAVS (Phenotype-Associated Variants in Saudi Arabia) knowledge graph of Saudi Arabian rare disease patients.
 
 ## Features
 
@@ -237,8 +237,7 @@ pytest test_sparql_queries.py
 If you use this software, please cite:
 
 ```
-Abdelhakim M, Althagafi A, Schofield PN, Hoehndorf R. PAVS: Phenotypic and 
-Variant Standardization of Saudi Arabian rare disease patients. [In preparation]
+
 ```
 
 ## License
