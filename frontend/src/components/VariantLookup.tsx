@@ -116,7 +116,7 @@ const VariantLookup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const isFirstRender = useRef(true);
+  //const isFirstRender = useRef(true);
 
   const performSearch = async (tab: SearchTab, vals: any) => {
     setLoading(true);
@@ -140,8 +140,8 @@ const VariantLookup: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    //if (isFirstRender.current) {
+      //isFirstRender.current = false;
       const tab = searchParams.get('tab') as SearchTab;
       if (tab) {
         performSearch(tab, {
