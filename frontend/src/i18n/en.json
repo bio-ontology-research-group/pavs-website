@@ -58,7 +58,8 @@
     "genePlaceholder": "Gene symbol, e.g. SUMF1",
     "rsidPlaceholder": "e.g. rs1064793391",
     "hgvsPlaceholder": "e.g. NM_182760.3:c.785A>G",
-    "acmgOptions": ["Pathogenic", "Likely pathogenic", "Uncertain significance", "Likely benign", "Benign"]
+    "acmgOptions": ["Pathogenic", "Likely pathogenic", "Uncertain significance", "Likely benign", "Benign"],
+    "diseaseSearchNote": ""
   },
   "case": {
     "demographics": "Demographics",

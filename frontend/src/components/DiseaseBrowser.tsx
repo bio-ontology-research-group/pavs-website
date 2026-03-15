@@ -17,7 +17,7 @@ interface DiseaseResult {
 }
 
 const DiseaseBrowser: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [results, setResults] = useState<DiseaseResult[]>([]);
@@ -64,6 +64,11 @@ const DiseaseBrowser: React.FC = () => {
       </Helmet>
 
       <h2>{t('nav.disease')}</h2>
+      {i18n.language === 'ar' && (
+        <p style={{ fontSize: '0.85em', color: 'var(--color-text-light)', marginBottom: '12px', fontStyle: 'italic' }}>
+          {t('variant.diseaseSearchNote')}
+        </p>
+      )}
       <div className="form-group inline">
         <input
           type="text" value={query}
