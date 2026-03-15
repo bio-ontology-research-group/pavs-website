@@ -106,7 +106,7 @@ const VariantLookup: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  const [activeTab, setActiveTab] = useState<SearchTab>((searchParams.get('tab') as SearchTab) || 'gene');
+  const activeTab = (searchParams.get('tab') as SearchTab) || 'gene';
   const [gene, setGene] = useState(searchParams.get('gene') || '');
   const [rsid, setRsid] = useState(searchParams.get('rsid') || '');
   const [hgvs, setHgvs] = useState(searchParams.get('hgvs') || '');
@@ -116,7 +116,14 @@ const VariantLookup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  //const isFirstRender = useRef(true);
+
+  // Sync internal state when URL changes (for Back button support)
+  useEffect(() => {
+    setGene(searchParams.get('gene') || '');
+    setRsid(searchParams.get('rsid') || '');
+    setHgvs(searchParams.get('hgvs') || '');
+    setAcmgClass(searchParams.get('acmg') || 'Pathogenic');
+  }, [searchParams]);
 
   const performSearch = async (tab: SearchTab, vals: any) => {
     setLoading(true);
@@ -192,7 +199,11 @@ const VariantLookup: React.FC = () => {
       <div className="tab-bar">
         {(['gene', 'rsid', 'hgvs', 'acmg'] as SearchTab[]).map(tab => (
           <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}>
+            onClick={() => {
+              const next = new URLSearchParams(searchParams);
+              next.set('tab', tab);
+              setSearchParams(next);
+            }}>
             {t(`variant.by${tab.charAt(0).toUpperCase() + tab.slice(1)}`)}
           </button>
         ))}
