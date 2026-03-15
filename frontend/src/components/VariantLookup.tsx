@@ -216,9 +216,10 @@ const VariantLookup: React.FC = () => {
         )}
         {activeTab === 'acmg' && (
           <select value={acmgClass} onChange={e => setAcmgClass(e.target.value)} className="text-input">
-            {['Pathogenic', 'Likely pathogenic', 'Uncertain significance', 'Likely benign', 'Benign'].map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
+            {(t('variant.acmgOptions', { returnObjects: true }) as string[]).map((label, idx) => {
+              const values = ['Pathogenic', 'Likely pathogenic', 'Uncertain significance', 'Likely benign', 'Benign'];
+              return <option key={values[idx]} value={values[idx]}>{label}</option>;
+            })}
           </select>
         )}
       </div>
