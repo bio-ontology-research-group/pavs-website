@@ -102,6 +102,19 @@ function PredBadge({ label, val }: { label: string; val: string }) {
   );
 }
 
+/** Localize ACMG class labels and normalize for CSS classes. */
+function localizeAcmg(acmg: string, t: any): { label: string; className: string } {
+  const raw = acmg.toLowerCase().replace(/[^a-z]+/g, '_');
+  const key = raw === 'uncertain_significance' ? 'uncertain_significance' :
+              raw === 'pathogenic' ? 'pathogenic' :
+              raw === 'likely_pathogenic' ? 'likely_pathogenic' :
+              raw === 'likely_benign' ? 'likely_benign' :
+              raw === 'benign' ? 'benign' : raw;
+
+  const label = t(`acmg.${key}`, { defaultValue: acmg });
+  return { label, className: `acmg-${key.replace(/_/g, '-')}` };
+}
+
 const VariantLookup: React.FC = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -285,9 +298,14 @@ const VariantLookup: React.FC = () => {
                     </td>
                     <td className="mono">{r.hgvsC || '—'}</td>
                     <td>
-                      <span className={`acmg-badge acmg-${(r.acmg || '').toLowerCase().replace(/\s+/g, '-')}`}>
-                        {r.acmg || '—'}
-                      </span>
+                      {r.acmg ? (() => {
+                        const { label, className } = localizeAcmg(r.acmg, t);
+                        return (
+                          <span className={`acmg-badge ${className}`}>
+                            {label}
+                          </span>
+                        );
+                      })() : '—'}
                     </td>
                     <td>
                       {r.saudiAF === '0' || r.saudiAF === '0.0'

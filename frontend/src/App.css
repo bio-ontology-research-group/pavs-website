@@ -171,6 +171,7 @@ a:hover { text-decoration: underline; }
   font-size: 14px;
   transition: var(--transition);
   background: white;
+  color: var(--color-text);
 }
 .text-input:focus {
   outline: none;
@@ -196,6 +197,13 @@ a:hover { text-decoration: underline; }
   border-radius: var(--radius);
   font-size: 14px;
   background: white;
+  color: var(--color-text);
+}
+
+select option {
+  color: var(--color-text);
+  background: white;
+  font-family: inherit;
 }
 
 .search-actions { display: flex; gap: 10px; margin-top: 8px; }
