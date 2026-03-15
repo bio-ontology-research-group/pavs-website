@@ -577,6 +577,7 @@ class PhenotypeSearchRequest(BaseModel):
     include_ddd: bool = False
     include_literature: bool = False
     include_clinvar: bool = False
+    only_diagnosed: bool = False
 
 
 class VariantSearchRequest(BaseModel):
@@ -730,7 +731,8 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
     results = []
     for case in case_hpo_cache:
         src = case.get("source", "")
-        is_saudi = case.get("is_saudi", False)
+        # Robust is_saudi: check is_saudi flag OR source name
+        is_saudi = case.get("is_saudi", False) or "saudi" in src.lower()
         is_ddd = "ddd" in src.lower()
         is_clinvar = src == "ClinVar"
         is_lit = not is_saudi and not is_ddd and not is_clinvar
@@ -742,6 +744,9 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
         if is_lit and not req.include_literature:
             continue
         if is_clinvar and not req.include_clinvar:
+            continue
+
+        if req.only_diagnosed and not case.get("gene"):
             continue
 
         # Optionally expand with disease HPO terms (modifies target only, uses in-memory cache)
@@ -765,9 +770,9 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
             # Prefer an explicit label; for ClinVar cases use disease_label; otherwise raw value
             disease_display = case.get("disease_label") or disease_raw
 
-            # Suggested diseases for any case that has a gene
+            # Suggested diseases for any case that has a gene; only if no explicit disease
             suggested_disease = ""
-            if gene:
+            if not disease_display and gene:
                 assoc = gene_disease_cache.get(gene, [])
                 if assoc:
                     suggested_disease = "; ".join(assoc)
@@ -778,7 +783,7 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
                 "disease": disease_display,
                 "suggested_disease": suggested_disease,
                 "source": case["source"],
-                "is_saudi": case["is_saudi"],
+                "is_saudi": is_saudi,
                 "hpo_ids": case["hpo_ids"],
                 "score": round(score, 6),
             })
@@ -1019,12 +1024,13 @@ def get_case(case_id: str):
         case_data["field_metadata"] = FIELD_DESCRIPTIONS
 
         # Suggested OMIM diseases (when case has no diagnosed disease)
-        # Only shown for Saudi cases with 1-3 diseases for the causative gene.
+        # Only shown for cases with 1-3 diseases for the causative gene.
         case_data["suggested_diseases"] = []
-        has_disease = bool(case_data["properties"].get("diseaseLabel"))
-        is_saudi = case_data["properties"].get("isSaudi") == "true"
-        if is_saudi and not has_disease and case_data["variants"]:
+        has_disease = bool(case_data["properties"].get("diseaseLabel")) or bool(case_data["diseases"])
+
+        if not has_disease and case_data["variants"]:
             seen_genes: set = set()
+
             for var in case_data["variants"]:
                 gene = var.get("gene", "")
                 if not gene or gene in seen_genes:

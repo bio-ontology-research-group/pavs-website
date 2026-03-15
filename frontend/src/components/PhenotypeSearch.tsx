@@ -25,11 +25,10 @@ const PhenotypeSearch: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedHpos, setSelectedHpos] = useState<HpoOption[]>([]);
   const [method, setMethod] = useState<'lin' | 'resnik'>('lin');
-  const [includeDisease, setIncludeDisease] = useState(false);
   const [includeSaudi, setIncludeSaudi] = useState(true);
   const [includeDDD, setIncludeDDD] = useState(false);
   const [includeLiterature, setIncludeLiterature] = useState(false);
-  const [includeClinVar, setIncludeClinVar] = useState(false);
+  const [onlyDiagnosed, setOnlyDiagnosed] = useState(false);
   const [fetchLimit, setFetchLimit] = useState(200);
   const [results, setResults] = useState<CaseResult[]>([]);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
@@ -46,11 +45,10 @@ const PhenotypeSearch: React.FC = () => {
 
     const hpos = searchParams.get('hpos');
     const m = searchParams.get('method');
-    const dis = searchParams.get('disease') === 'true';
     const sau = searchParams.get('saudi') !== 'false'; // default true
     const ddd = searchParams.get('ddd') === 'true';
     const lit = searchParams.get('literature') === 'true';
-    const cv = searchParams.get('clinvar') === 'true';
+    const diagnosed = searchParams.get('diagnosed') === 'true';
     const lim = parseInt(searchParams.get('limit') || '200');
 
     if (hpos) {
@@ -72,11 +70,10 @@ const PhenotypeSearch: React.FC = () => {
         hpo_ids: hpoIds,
         method: (m as any) || 'lin',
         limit: lim,
-        include_disease_phenotypes: dis,
         include_saudi: sau,
         include_ddd: ddd,
         include_literature: lit,
-        include_clinvar: cv
+        only_diagnosed: diagnosed
       });
     } else {
       // Clear results if no HPOs in URL (e.g. user manually cleared URL or navigated back to initial state)
@@ -85,11 +82,10 @@ const PhenotypeSearch: React.FC = () => {
     }
 
     if (m === 'lin' || m === 'resnik') setMethod(m);
-    setIncludeDisease(dis);
     setIncludeSaudi(sau);
     setIncludeDDD(ddd);
     setIncludeLiterature(lit);
-    setIncludeClinVar(cv);
+    setOnlyDiagnosed(diagnosed);
     setFetchLimit(lim);
   }, [searchParams]);
 
@@ -139,11 +135,10 @@ const PhenotypeSearch: React.FC = () => {
     const searchParamsObj: any = {
       hpos: hpoIds.join(','),
       method,
-      disease: includeDisease.toString(),
       saudi: includeSaudi.toString(),
       ddd: includeDDD.toString(),
       literature: includeLiterature.toString(),
-      clinvar: includeClinVar.toString(),
+      diagnosed: onlyDiagnosed.toString(),
       limit: fetchLimit.toString()
     };
     setSearchParams(searchParamsObj);
@@ -152,11 +147,10 @@ const PhenotypeSearch: React.FC = () => {
       hpo_ids: hpoIds,
       method,
       limit: fetchLimit,
-      include_disease_phenotypes: includeDisease,
       include_saudi: includeSaudi,
       include_ddd: includeDDD,
       include_literature: includeLiterature,
-      include_clinvar: includeClinVar,
+      only_diagnosed: onlyDiagnosed,
     });
   };
 
@@ -206,9 +200,9 @@ const PhenotypeSearch: React.FC = () => {
 
         <div className="form-group">
           <label>
-            <input type="checkbox" checked={includeDisease}
-              onChange={e => setIncludeDisease(e.target.checked)} />
-            {' '}{t('search.includeDisease')}
+            <input type="checkbox" checked={onlyDiagnosed}
+              onChange={e => setOnlyDiagnosed(e.target.checked)} />
+            {' '}{t('search.onlyDiagnosed')}
           </label>
         </div>
 
@@ -229,11 +223,6 @@ const PhenotypeSearch: React.FC = () => {
               <input type="checkbox" checked={includeLiterature}
                 onChange={e => setIncludeLiterature(e.target.checked)} />
               {' '}{t('search.includeLiterature')}
-            </label>
-            <label>
-              <input type="checkbox" checked={includeClinVar}
-                onChange={e => setIncludeClinVar(e.target.checked)} />
-              {' '}{t('search.includeClinVar')}
             </label>
           </div>
         </div>

@@ -17,12 +17,11 @@
     "method": "Similarity method",
     "lin": "Lin + BMA (default)",
     "resnik": "Resnik + BMA",
-    "includeDisease": "Expand with OMIM/ClinVar disease HPO annotations",
     "cohorts": "Cohorts",
     "includeSaudi": "Saudi",
     "includeDDD": "DDD",
     "includeLiterature": "Literature",
-    "includeClinVar": "ClinVar",
+    "onlyDiagnosed": "Show only diagnosed cases (with gene/variant)",
     "limit": "Max results to fetch",
     "showing": "Showing {{count}} of {{total}} results",
     "showMore": "Show more"

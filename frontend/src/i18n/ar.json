@@ -17,12 +17,11 @@
     "method": "طريقة التشابه",
     "lin": "Lin + BMA (الافتراضي)",
     "resnik": "Resnik + BMA",
-    "includeDisease": "التوسع باستخدام مصطلحات HPO للأمراض (OMIM/ClinVar)",
     "cohorts": "المجموعات",
     "includeSaudi": "سعودي",
     "includeDDD": "DDD",
     "includeLiterature": "الأدبيات",
-    "includeClinVar": "ClinVar",
+    "onlyDiagnosed": "إظهار الحالات المشخصة فقط (بجين/متغير)",
     "limit": "الحد الأقصى للجلب",
     "showing": "عرض {{count}} من {{total}} نتيجة",
     "showMore": "عرض المزيد"
