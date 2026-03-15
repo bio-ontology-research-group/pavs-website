@@ -105,6 +105,7 @@ const App: React.FC = () => {
       <footer className="footer">
         <p>
           PAVS — Phenotype-Associated Variants in Saudi Arabia ·{' '}
+          <a href="https://borg.kaust.edu.sa/" target="_blank" rel="noopener noreferrer">Bio-Ontology Research Group</a>,{' '}
           <a href="https://www.kaust.edu.sa" target="_blank" rel="noopener noreferrer">KAUST</a>
         </p>
       </footer>
