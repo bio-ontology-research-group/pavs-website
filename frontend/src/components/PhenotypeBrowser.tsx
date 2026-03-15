@@ -47,7 +47,7 @@ interface TreeNodeProps {
   selected: HpoNode | null;
   onSelect: (node: HpoNode) => void;
   childrenMap: Record<string, HpoNode[]>;
-  expanded: Set<string>;
+  expandedIds: Set<string>;
   loadingNodes: Set<string>;
   onToggle: (id: string) => void;
   isAr: boolean;
@@ -55,10 +55,10 @@ interface TreeNodeProps {
 
 const TreeNode: React.FC<TreeNodeProps> = ({
   node, depth, selected, onSelect,
-  childrenMap, expanded, loadingNodes, onToggle, isAr,
+  childrenMap, expandedIds, loadingNodes, onToggle, isAr,
 }) => {
   const hasChildren = node.child_count > 0;
-  const isExpanded = expanded.has(node.id);
+  const isExpanded = expandedIds.has(node.id);
   const isLoading = loadingNodes.has(node.id);
   const isSelected = selected?.id === node.id;
   const children = childrenMap[node.id] || [];
@@ -98,7 +98,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           selected={selected}
           onSelect={onSelect}
           childrenMap={childrenMap}
-          expanded={expanded}
+          expandedIds={expandedIds}
           loadingNodes={loadingNodes}
           onToggle={onToggle}
           isAr={isAr}
@@ -150,8 +150,15 @@ const PhenotypeBrowser: React.FC = () => {
 
   // Tree state
   const [childrenMap, setChildrenMap] = useState<Record<string, HpoNode[]>>({});
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [loadingNodes, setLoadingNodes] = useState<Set<string>>(new Set());
+
+  // Expanded nodes from URL
+  const expandedIds = useMemo(() => {
+    const p = searchParams.get('expanded');
+    const set = p ? new Set(p.split(',')) : new Set<string>();
+    set.add(ROOT_ID); // Always expand root
+    return set;
+  }, [searchParams]);
 
   // Selected term + cases derived from URL
   const selectedHpId = searchParams.get('hp');
@@ -228,32 +235,45 @@ const PhenotypeBrowser: React.FC = () => {
     fetchCases(selectedHpId, includeChildren, includeDDD, includeLiterature);
   }, [selectedHpId, includeChildren, includeDDD, includeLiterature, fetchCases]);
 
+  // Sync expanded IDs data
+  useEffect(() => {
+    expandedIds.forEach(id => {
+      if (childrenMap[id] === undefined) {
+        fetchChildren(id);
+      }
+    });
+  }, [expandedIds, childrenMap, fetchChildren]);
+
   // Load root children on mount
   useEffect(() => {
-    fetchChildren(ROOT_ID).then(() => {
-      setExpanded(prev => new Set(prev).add(ROOT_ID));
-    });
+    fetchChildren(ROOT_ID);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggle = useCallback(async (id: string) => {
-    if (!expanded.has(id)) {
-      // Expand: fetch children first if needed
+    const nextParams = new URLSearchParams(searchParams);
+    const current = new Set(expandedIds);
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
       if (childrenMap[id] === undefined) {
         await fetchChildren(id);
       }
-      setExpanded(prev => new Set(prev).add(id));
-    } else {
-      setExpanded(prev => { const next = new Set(prev); next.delete(id); return next; });
     }
-  }, [expanded, childrenMap, fetchChildren]);
+    current.delete(ROOT_ID); // root is always expanded by default in our useMemo
+    if (current.size > 0) {
+      nextParams.set('expanded', Array.from(current).join(','));
+    } else {
+      nextParams.delete('expanded');
+    }
+    setSearchParams(nextParams);
+  }, [expandedIds, childrenMap, fetchChildren, searchParams, setSearchParams]);
 
   const handleSelect = useCallback((node: HpoNode) => {
-    const nextParams: any = { hp: node.id };
-    if (!includeChildren) nextParams.children = 'false';
-    if (includeDDD) nextParams.ddd = 'true';
-    if (includeLiterature) nextParams.literature = 'true';
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('hp', node.id);
     setSearchParams(nextParams);
-  }, [includeChildren, includeDDD, includeLiterature, setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
   const handleToggleOption = (
     key: 'children' | 'ddd' | 'literature',
@@ -305,7 +325,7 @@ const PhenotypeBrowser: React.FC = () => {
               selected={selected}
               onSelect={handleSelect}
               childrenMap={childrenMap}
-              expanded={expanded}
+              expandedIds={expandedIds}
               loadingNodes={loadingNodes}
               onToggle={handleToggle}
               isAr={isAr}
