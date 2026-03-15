@@ -249,16 +249,55 @@ def search_by_disease(q: str, limit: int = 50) -> str:
     return f"""
 {PREFIXES}
 SELECT DISTINCT ?case ?id ?disease ?source ?isSaudi ?gene WHERE {{
-  GRAPH ?g {{
-    ?case a pavs:Case ;
-          dc:identifier ?id ;
-          pavs:source ?source ;
-          pavs:isSaudi ?isSaudi ;
-          pavs:diseaseLabel ?disease .
-    FILTER(CONTAINS(LCASE(?disease), "{q_lower}"))
+  {{
+    # 1. Direct label match
+    GRAPH ?g {{
+      ?case a pavs:Case ;
+            dc:identifier ?id ;
+            pavs:source ?source ;
+            pavs:isSaudi ?isSaudi ;
+            pavs:diseaseLabel ?disease .
+      FILTER(CONTAINS(LCASE(?disease), "{q_lower}"))
+    }}
     OPTIONAL {{ ?case pavs:hasVariant ?v .
                ?v pavs:affectsGene ?gUri .
                BIND(STRAFTER(STR(?gUri), "hgnc.symbol/") AS ?gene) }}
+  }} UNION {{
+    # 2. Match through hasDisease link + HPOA label
+    GRAPH ?g {{
+      ?case a pavs:Case ;
+            dc:identifier ?id ;
+            pavs:source ?source ;
+            pavs:isSaudi ?isSaudi ;
+            pavs:hasDisease ?dUri .
+    }}
+    GRAPH <{GRAPH_HPOA}> {{
+      ?assoc pavs:disease ?dUri ;
+             pavs:diseaseName ?disease .
+      FILTER(CONTAINS(LCASE(?disease), "{q_lower}"))
+    }}
+    OPTIONAL {{ ?case pavs:hasVariant ?v .
+               ?v pavs:affectsGene ?gUri .
+               BIND(STRAFTER(STR(?gUri), "hgnc.symbol/") AS ?gene) }}
+  }} UNION {{
+    # 3. Match through Variant -> Gene -> Related Disease (inferred)
+    GRAPH ?g {{
+      ?case a pavs:Case ;
+            dc:identifier ?id ;
+            pavs:source ?source ;
+            pavs:isSaudi ?isSaudi ;
+            pavs:hasVariant ?v .
+      ?v pavs:affectsGene ?gUri .
+      BIND(STRAFTER(STR(?gUri), "hgnc.symbol/") AS ?gene)
+    }}
+    GRAPH <{GRAPH_GENES}> {{
+      ?gUri pavs:relatedDisease ?dUri .
+    }}
+    GRAPH <{GRAPH_HPOA}> {{
+      ?assoc pavs:disease ?dUri ;
+             pavs:diseaseName ?disease .
+      FILTER(CONTAINS(LCASE(?disease), "{q_lower}"))
+    }}
   }}
 }} LIMIT {limit}
 """
