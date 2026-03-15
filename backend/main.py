@@ -82,6 +82,12 @@ ZYGOSITY_MAP = {
         "ar": "أحادي الزيجوت",
         "desc_en": "Individual has only one allele at a particular locus (e.g., X-linked in males).",
         "desc_ar": "الفرد لديه أليل واحد فقط في موضع معين (على سبيل المثال، المرتبط بـ X في الذكور)."
+    },
+    "http://purl.obolibrary.org/obo/GENO_0000137": {
+        "en": "Compound heterozygous",
+        "ar": "متباين الزيجوت مركب",
+        "desc_en": "Individual has two different mutant alleles at a particular locus.",
+        "desc_ar": "الفرد لديه أليلين طافرين مختلفين في موضع معين."
     }
 }
 
@@ -935,6 +941,8 @@ def get_case(case_id: str):
         case_data["excluded_phenotypes"] = [uri_to_hpo(u) for u in excluded_phenotype_uris]
 
         def uri_to_disease(uri: str) -> Dict[str, str]:
+            # Normalize to CURIE ID
+            did = ""
             # omim: https://omim.org/entry/123456 -> OMIM:123456
             if "omim.org/entry/" in uri:
                 did = "OMIM:" + uri.split("/")[-1]
@@ -947,7 +955,13 @@ def get_case(case_id: str):
             else:
                 did = uri.split("/")[-1]
             
-            return {"id": did, "label": disease_label_cache.get(did, ""), "url": uri}
+            # Fetch label from cache
+            label = disease_label_cache.get(did)
+            if not label and "diseaseLabel" in case_data["properties"]:
+                # If we have a single diseaseLabel property, use it as fallback for the first disease
+                label = case_data["properties"].get("diseaseLabel")
+            
+            return {"id": did, "label": label or did, "url": uri}
 
         case_data["diseases"] = [uri_to_disease(u) for u in disease_uris]
 
