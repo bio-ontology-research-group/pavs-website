@@ -23,10 +23,12 @@ const DiseaseBrowser: React.FC = () => {
   const [results, setResults] = useState<DiseaseResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const isFirstRender = useRef(true);
 
   const performSearch = async (q: string) => {
-    if (!q.trim()) return;
+    if (!q.trim()) {
+      setResults([]);
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -40,17 +42,18 @@ const DiseaseBrowser: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      const q = searchParams.get('q');
-      if (q) performSearch(q);
+    const q = searchParams.get('q') || '';
+    setQuery(q);
+    if (q) {
+      performSearch(q);
+    } else {
+      setResults([]);
     }
   }, [searchParams]);
 
   const handleSearch = () => {
     if (!query.trim()) return;
     setSearchParams({ q: query.trim() });
-    performSearch(query);
   };
 
   return (
