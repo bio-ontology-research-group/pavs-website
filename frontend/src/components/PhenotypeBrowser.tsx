@@ -153,21 +153,21 @@ const PhenotypeBrowser: React.FC = () => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [loadingNodes, setLoadingNodes] = useState<Set<string>>(new Set());
 
-  // Selected term + cases
+  // Selected term + cases derived from URL
+  const selectedHpId = searchParams.get('hp');
   const [selected, setSelected] = useState<HpoNode | null>(null);
   const [termEnrichment, setTermEnrichment] = useState<HpoEnrichment | null>(null);
   const [termCases, setTermCases] = useState<CaseResult[]>([]);
   const [casesLoading, setCasesLoading] = useState(false);
 
-  // Toggles for case sources
-  const [includeChildren, setIncludeChildren] = useState(searchParams.get('children') !== 'false');
-  const [includeDDD, setIncludeDDD] = useState(searchParams.get('ddd') === 'true');
-  const [includeLiterature, setIncludeLiterature] = useState(searchParams.get('literature') === 'true');
-
-  const isFirstRender = useRef(true);
+  // Toggles for case sources from URL
+  const includeChildren = searchParams.get('children') !== 'false';
+  const includeDDD = searchParams.get('ddd') === 'true';
+  const includeLiterature = searchParams.get('literature') === 'true';
 
   const fetchChildren = useCallback(async (hp_id: string) => {
     // Check if childrenMap[hp_id] is already fetched
+    if (childrenMap[hp_id]) return childrenMap[hp_id];
     setLoadingNodes(prev => new Set(prev).add(hp_id));
     try {
       const res = await axios.get(`${API}/api/hpo-children/${encodeURIComponent(hp_id)}`);
@@ -179,7 +179,7 @@ const PhenotypeBrowser: React.FC = () => {
     } finally {
       setLoadingNodes(prev => { const next = new Set(prev); next.delete(hp_id); return next; });
     }
-  }, []);
+  }, [childrenMap]);
 
   const fetchCases = useCallback(async (
     hp_id: string,
@@ -188,7 +188,6 @@ const PhenotypeBrowser: React.FC = () => {
     lit: boolean,
   ) => {
     setCasesLoading(true);
-    setTermCases([]);
     try {
       const res = await axios.get(`${API}/api/phenotype/${encodeURIComponent(hp_id)}/cases`, {
         params: { include_children: children, include_ddd: ddd, include_literature: lit, limit: 1000 },
@@ -201,32 +200,39 @@ const PhenotypeBrowser: React.FC = () => {
     }
   }, []);
 
+  // Sync selected term and cases when URL changes
+  useEffect(() => {
+    if (!selectedHpId) {
+      setSelected(null);
+      setTermEnrichment(null);
+      setTermCases([]);
+      return;
+    }
+
+    // Only fetch if selection actually changed
+    if (selected?.id !== selectedHpId) {
+      axios.get(`${API}/api/hpo/${encodeURIComponent(selectedHpId)}`).then(res => {
+        const node: HpoNode = {
+          id: res.data.id,
+          label: res.data.name,
+          arabic_label: res.data.arabic_label,
+          case_count: 0,
+          saudi_case_count: 0,
+          child_count: 0
+        };
+        setSelected(node);
+        setTermEnrichment(res.data);
+      }).catch(() => {});
+    }
+
+    fetchCases(selectedHpId, includeChildren, includeDDD, includeLiterature);
+  }, [selectedHpId, includeChildren, includeDDD, includeLiterature, fetchCases]);
+
   // Load root children on mount
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      fetchChildren(ROOT_ID).then(() => {
-        setExpanded(new Set([ROOT_ID]));
-      });
-
-      const hpId = searchParams.get('hp');
-      if (hpId) {
-        // Fetch term detail for the selected HP in URL
-        axios.get(`${API}/api/hpo/${encodeURIComponent(hpId)}`).then(res => {
-          const node: HpoNode = {
-            id: res.data.id,
-            label: res.data.name,
-            arabic_label: res.data.arabic_label,
-            case_count: 0, // Not available from basic API
-            saudi_case_count: 0,
-            child_count: 0
-          };
-          setSelected(node);
-          setTermEnrichment(res.data);
-          fetchCases(hpId, includeChildren, includeDDD, includeLiterature);
-        }).catch(() => {});
-      }
-    }
+    fetchChildren(ROOT_ID).then(() => {
+      setExpanded(prev => new Set(prev).add(ROOT_ID));
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleToggle = useCallback(async (id: string) => {
@@ -242,40 +248,30 @@ const PhenotypeBrowser: React.FC = () => {
   }, [expanded, childrenMap, fetchChildren]);
 
   const handleSelect = useCallback((node: HpoNode) => {
-    setSelected(node);
-    setTermEnrichment(null);
     const nextParams: any = { hp: node.id };
     if (!includeChildren) nextParams.children = 'false';
     if (includeDDD) nextParams.ddd = 'true';
     if (includeLiterature) nextParams.literature = 'true';
     setSearchParams(nextParams);
-
-    fetchCases(node.id, includeChildren, includeDDD, includeLiterature);
-    axios.get(`${API}/api/hpo/${encodeURIComponent(node.id)}`)
-      .then(res => setTermEnrichment(res.data))
-      .catch(() => {});
-  }, [includeChildren, includeDDD, includeLiterature, fetchCases, setSearchParams]);
+  }, [includeChildren, includeDDD, includeLiterature, setSearchParams]);
 
   const handleToggleOption = (
-    setter: React.Dispatch<React.SetStateAction<boolean>>,
-    currentValue: boolean,
     key: 'children' | 'ddd' | 'literature',
   ) => {
-    const newVal = !currentValue;
-    setter(newVal);
-    if (selected) {
-      const c = key === 'children' ? newVal : includeChildren;
-      const d = key === 'ddd' ? newVal : includeDDD;
-      const l = key === 'literature' ? newVal : includeLiterature;
-      
-      const nextParams: any = { hp: selected.id };
-      if (!c) nextParams.children = 'false';
-      if (d) nextParams.ddd = 'true';
-      if (l) nextParams.literature = 'true';
-      setSearchParams(nextParams);
-
-      fetchCases(selected.id, c, d, l);
+    if (!selectedHpId) return;
+    
+    const nextParams = new URLSearchParams(searchParams);
+    if (key === 'children') {
+      if (includeChildren) nextParams.set('children', 'false');
+      else nextParams.delete('children');
+    } else if (key === 'ddd') {
+      if (includeDDD) nextParams.delete('ddd');
+      else nextParams.set('ddd', 'true');
+    } else if (key === 'literature') {
+      if (includeLiterature) nextParams.delete('literature');
+      else nextParams.set('literature', 'true');
     }
+    setSearchParams(nextParams);
   };
 
   // Root nodes: children of HP:0000118
@@ -362,17 +358,17 @@ const PhenotypeBrowser: React.FC = () => {
             <div className="gene-source-toggles" style={{ marginTop: '12px' }}>
               <label className="toggle-label">
                 <input type="checkbox" checked={includeChildren}
-                  onChange={() => handleToggleOption(setIncludeChildren, includeChildren, 'children')} />
+                  onChange={() => handleToggleOption('children')} />
                 {' '}{t('phenotypeBrowser.includeChildren')}
               </label>
               <label className="toggle-label">
                 <input type="checkbox" checked={includeDDD}
-                  onChange={() => handleToggleOption(setIncludeDDD, includeDDD, 'ddd')} />
+                  onChange={() => handleToggleOption('ddd')} />
                 {' '}DDD
               </label>
               <label className="toggle-label">
                 <input type="checkbox" checked={includeLiterature}
-                  onChange={() => handleToggleOption(setIncludeLiterature, includeLiterature, 'literature')} />
+                  onChange={() => handleToggleOption('literature')} />
                 {' '}{t('badges.literature')}
               </label>
             </div>
