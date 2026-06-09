@@ -145,8 +145,14 @@
       "pathogenicVariants": "Pathogenic variants with disease labels",
       "constrainedGenes": "Most constrained genes (LOEUF < 0.15)",
       "diseaseHpo": "HPO terms for a disease (OMIM:272200)",
-      "consanguineous": "Cases with consanguineous parents"
+      "consanguineous": "Cases with consanguineous parents",
+      "recessiveBurden": "Recessive burden: genes most often homozygous"
     }
+  },
+  "source": {
+    "clinicalTip": "Phenotypes from routine clinical notes — typically few, general HPO terms.",
+    "caseReportTip": "Phenotypes curated from a published case report — typically more, more specific HPO terms.",
+    "researchTip": "Deeply phenotyped research cohort — many specific HPO terms."
   },
   "links": {
     "hpo": "HPO browser",

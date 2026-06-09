@@ -109,6 +109,24 @@ LIMIT 30`,
 }
 LIMIT 50`,
   },
+  {
+    // Use case: recessive-disease burden — genes most often implicated in
+    // homozygous form in the Saudi cohort (GENO:0000136 = homozygous).
+    key: 'recessiveBurden',
+    query: `${PREFIXES}PREFIX geno: <http://purl.obolibrary.org/obo/GENO_>
+SELECT ?gene (COUNT(DISTINCT ?case) AS ?nHomozygous) WHERE {
+  GRAPH <https://pavs.phenomebrowser.net/graph/cases> {
+    ?case a pavs:Case ;
+          pavs:hasVariant ?v .
+    ?v pavs:affectsGene ?gUri ;
+       pavs:zygosity geno:0000136 .
+    BIND(STRAFTER(STR(?gUri), "hgnc.symbol/") AS ?gene)
+  }
+}
+GROUP BY ?gene
+ORDER BY DESC(?nHomozygous)
+LIMIT 30`,
+  },
 ];
 
 const SparqlExplorer: React.FC = () => {

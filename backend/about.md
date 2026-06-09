@@ -9,9 +9,21 @@ case to international ontologies (HPO, OMIM, MONDO) and variant databases (ClinV
 
 ## Data Sources
 
-- **PAVS Saudi cohort** — variants curated from clinical studies at KAUST (shown in green)
-- **DDD study** — Deciphering Developmental Disorders, non-Saudi cases (shown in gray)
-- **Literature phenopackets** — published case reports from the GA4GH phenopacket corpus (shown in indigo)
+Sources differ along two axes — the **population** (colour) and the **phenotype
+provenance** (how the phenotypes were recorded, shown after the "·" in each badge).
+Provenance matters because it determines phenotype depth and specificity: routine
+clinical notes contain few, general HPO terms, whereas published case reports and
+research cohorts contain more and more specific terms.
+
+- **Saudi · clinical** (green) — Saudi cohort sources curated from clinical notes
+  and diagnostic reports (Alfares, Monies 2017/2019)
+- **Saudi · case report** (green, outlined) — Saudi cases curated from published
+  case reports (Abdelhakim, this study)
+- **Mixed · clinical** (teal) — mixed-population clinical cohort (Ziats et al.)
+- **DDD · research** (gray) — Deciphering Developmental Disorders, a deeply
+  phenotyped non-Saudi research cohort
+- **Literature** (indigo) — worldwide published case reports from the GA4GH
+  Phenopacket Store
 
 ## Phenotype Similarity
 
@@ -51,6 +63,46 @@ Variants are annotated using the Ensembl Variant Effect Predictor (VEP) with:
 
 Every variant with a known rsID or HGVS g. notation has a **TogoVar** link for instant
 cross-referencing against Japanese and global variant databases.
+
+## Use cases
+
+PAVS is a population-specific genotype–phenotype resource. Three representative
+uses (the queries are available in the **SPARQL** tab):
+
+1. **Population-aware variant interpretation.** Retrieve all Saudi cases for a
+   candidate gene together with their variants, zygosity, ACMG classification, and
+   consanguinity status to judge whether a homozygous recessive call is recurrent
+   in the population (e.g. *ELAC2* recurs in 51 Saudi cases, *ATP7B* in 42). Use
+   the **Gene** tab or the *"Saudi cases for a gene"* SPARQL example.
+2. **Phenotype-driven candidate shortlisting.** Enter a patient's HPO terms in the
+   **Phenotype** search to obtain a ranked list of candidate genes (Lin or Resnik
+   BMA). On sparse clinical profiles this is best used for shortlisting rather than
+   single top-1 prediction, and can be combined with the variant-level evidence
+   (VEP, SIFT, PolyPhen-2, gnomAD) stored for each variant.
+3. **Recessive-disease epidemiology.** The *"Recessive burden"* SPARQL example
+   ranks the genes most frequently implicated in homozygous form in the cohort,
+   supporting studies of the recessive disease burden in consanguineous
+   populations.
+
+Cases without phenotype annotations (e.g. unaffected relatives or records with
+only a suspected diagnosis) are retained for their genotype and family-structure
+information and can be filtered out when phenotype annotations are required.
+
+## Arabic translation
+
+The Arabic HPO labels, definitions, and layperson synonyms used in this interface
+are an independent, openly licensed resource developed for PAVS. There is no
+official Arabic localization of HPO; our resource additionally provides full
+definitions and layperson synonyms for patient-facing use and is distributed in
+Babelon format so it can be adopted by the official HPO internationalization
+infrastructure in the future.
+
+## Phenopacket Store
+
+The manually curated Saudi case reports are being prepared as a contribution to
+the GA4GH Phenopacket Store. Curated case reports that share a source publication
+with an existing Phenopacket Store entry are flagged with a source cross-reference
+so they can be identified or excluded.
 
 ## Citation
 
