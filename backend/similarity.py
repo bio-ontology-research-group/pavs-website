@@ -92,6 +92,81 @@ def _bma_fast(
     return sum(scores) / len(scores) if scores else 0.0
 
 
+def build_query_index(
+    q_terms: List[str],
+    target_terms,
+    ic: Dict[str, float],
+    ancestors: Dict[str, Set[str]],
+    method: str,
+):
+    """Precompute pairwise similarity from each query term to every distinct
+    target term, once per search.
+
+    Returns ``(sim_rows, best_per_target)`` where
+      * ``sim_rows[q][t]`` = sim(q, t)   (only non-zero values stored), and
+      * ``best_per_target[t]`` = max over query terms of sim(q, t).
+
+    With these, a per-case BMA is reduced to flat dict look-ups (see
+    :func:`bma_precomputed`), eliminating the millions of nested function
+    calls that dominate a full scan of the case cache.
+    """
+    use_lin = method == "lin"
+    sim_rows: Dict[str, Dict[str, float]] = {}
+    best_t: Dict[str, float] = {}
+    for q in q_terms:
+        anc_q = ancestors.get(q, {q})
+        ic_q = ic.get(q, 0.0)
+        row: Dict[str, float] = {}
+        for t in target_terms:
+            anc_t = ancestors.get(t, {t})
+            mica = _mica_ic_cached(q, t, ic, anc_q, anc_t)
+            if use_lin:
+                denom = ic_q + ic.get(t, 0.0)
+                s = (2.0 * mica) / denom if denom > 0.0 else 0.0
+            else:
+                s = mica
+            if s > 0.0:
+                row[t] = s
+                if s > best_t.get(t, 0.0):
+                    best_t[t] = s
+        sim_rows[q] = row
+    return sim_rows, best_t
+
+
+def bma_precomputed(
+    q_terms: List[str],
+    t_terms: List[str],
+    sim_rows: Dict[str, Dict[str, float]],
+    best_t: Dict[str, float],
+) -> float:
+    """funSimAvg for one case, using the index from :func:`build_query_index`.
+
+    Mathematically identical to :func:`bma_similarity_fast` on the same direct
+    term sets, but every term-pair similarity is a dict look-up rather than a
+    MICA computation through a multi-level call chain.
+    """
+    if not q_terms or not t_terms:
+        return 0.0
+    # q -> t : mean over query terms of the best match among the case terms
+    qt = 0.0
+    for q in q_terms:
+        row = sim_rows.get(q)
+        best = 0.0
+        if row:
+            for t in t_terms:
+                v = row.get(t)
+                if v is not None and v > best:
+                    best = v
+        qt += best
+    qt /= len(q_terms)
+    # t -> q : mean over case terms of the best match among the query terms
+    tq = 0.0
+    for t in t_terms:
+        tq += best_t.get(t, 0.0)
+    tq /= len(t_terms)
+    return (qt + tq) / 2.0
+
+
 def expand_hpos(terms: List[str], ancestors: Dict[str, Set[str]]) -> List[str]:
     """Expand HPO terms with their ancestors."""
     expanded: Set[str] = set()

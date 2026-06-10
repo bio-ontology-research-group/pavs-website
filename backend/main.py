@@ -33,7 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
-from .similarity import bma_similarity_fast, expand_hpos
+from .similarity import build_query_index, bma_precomputed, expand_hpos
 from . import sparql_queries as Q
 
 logging.basicConfig(level=logging.INFO)
@@ -807,7 +807,10 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
         "clinvar":          req.include_clinvar,
     }
 
-    results = []
+    # --- Pass 1: select enabled cases, build their direct target term sets, and
+    #     collect every distinct target term that will be compared against.
+    scan = []
+    distinct_targets = set()
     for case in case_hpo_cache:
         src = case.get("source", "")
         cohort = classify_cohort(src, case.get("is_saudi", False))
@@ -831,8 +834,20 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
 
         if not t_direct:
             continue
+        scan.append((case, cohort, t_direct))
+        distinct_targets.update(t_direct)
 
-        score = bma_similarity_fast(q_direct, t_direct, ic_cache, ancestor_cache, method)
+    # Precompute query-term → target-term similarity once. Per-case scoring is
+    # then pure dict look-ups, which is what makes a full scan of ~29k cases
+    # (with ClinVar enabled) fast. Result is identical to the per-pair BMA.
+    sim_rows, best_t = build_query_index(
+        q_direct, distinct_targets, ic_cache, ancestor_cache, method
+    )
+
+    # --- Pass 2: score every selected case via the precomputed index.
+    results = []
+    for case, cohort, t_direct in scan:
+        score = bma_precomputed(q_direct, t_direct, sim_rows, best_t)
         if score > 0:
             gene = case.get("gene", "")
             disease_raw = case.get("disease", "")
