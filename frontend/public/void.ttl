@@ -35,7 +35,7 @@
 
 # VoID Description for PAVS Knowledge Graph
 # Generated: 2026-03-14T08:26:50.670171Z
-# Version: 1.0.0
+# Version: 1.1.0
 
 <https://pavs.phenomebrowser.net/dataset>
     a void:Dataset , dcat:Dataset ;
@@ -48,9 +48,9 @@
     skos:altLabel "PAVS"@en ;
     
     # Version and provenance
-    dct:hasVersion "1.0.0" ;
-    pav:version "1.0.0" ;
-    pav:hasCurrentVersion <https://pavs.phenomebrowser.net/version/1.0.0> ;
+    dct:hasVersion "1.1.0" ;
+    pav:version "1.1.0" ;
+    pav:hasCurrentVersion <https://pavs.phenomebrowser.net/version/1.1.0> ;
     pav:createdOn "2026-03-14T08:26:50.670171Z"^^xsd:dateTime ;
     pav:lastUpdateOn "2026-03-14T08:26:50.670171Z"^^xsd:dateTime ;
     

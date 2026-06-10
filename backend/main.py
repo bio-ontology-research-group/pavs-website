@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
 from .similarity import bma_similarity, bma_similarity_fast, expand_hpos
@@ -41,6 +41,11 @@ log = logging.getLogger("pavs")
 
 SPARQL_ENDPOINT = os.environ.get("SPARQL_ENDPOINT", "http://localhost:8890/sparql")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "data"))
+
+# Saudi sources whose phenotypes are curated from published case reports (prefix M)
+# rather than from clinical notes. Used to separate the two Saudi subcohorts in
+# search filtering and display (cf. SourceBadge on the frontend).
+SAUDI_LITERATURE_SOURCES = {"marwa-variants"}
 HPO_TRANSLATION_PATH = Path(os.environ.get(
     "HPO_TRANSLATION_PATH",
     str(DATA_DIR.parent / "translation" / "hpo_arabic_translations.json"),
@@ -154,6 +159,7 @@ gene_disease_cache: Dict[str, List[str]] = {}  # "SUMF1" → ["Multiple sulfatas
 hpo_ar_cache: Dict[str, Dict[str, str]] = {}  # "HP:0001263" → {arabic_label, arabic_layperson, arabic_definition}
 hpo_obo_cache: Dict[str, Dict] = {}           # "HP:0001263" → {definition, layperson_synonyms, synonyms}
 children_cache: Dict[str, Set[str]] = {}       # HP:ID → set of direct child HP IDs
+phenopacket_index: Dict[str, Dict[str, Any]] = {}  # "PAVS:A0000001" → full phenopacket dict (for downloads)
 term_case_count: Dict[str, int] = {}           # HP:ID → propagated case count (all cohorts)
 term_saudi_count: Dict[str, int] = {}          # HP:ID → propagated case count (Saudi only)
 disease_hpo_cache: Dict[str, List[str]] = {}   # "OMIM:272200" → [HP:NNNNNNN, ...]
@@ -542,6 +548,23 @@ async def startup():
     except Exception as e:
         log.warning(f"Case HPO load failed: {e}")
 
+    log.info("Loading phenopacket index for downloads …")
+    try:
+        pp_path = DATA_DIR / "PAVS_phenopackets.json"
+        if pp_path.exists():
+            phenopacket_index.clear()
+            with pp_path.open(encoding="utf-8") as fh:
+                packets = json.load(fh)
+            for pp in packets:
+                pid = pp.get("id")
+                if pid:
+                    phenopacket_index[pid] = pp
+            log.info(f"  Indexed {len(phenopacket_index)} phenopackets for download from {pp_path}")
+        else:
+            log.warning(f"  PAVS_phenopackets.json not found at {pp_path}; per-case downloads will be unavailable")
+    except Exception as e:
+        log.warning(f"Phenopacket index load failed: {e}")
+
     log.info("Loading disease labels and HPO annotations from phenotype.hpoa …")
     hpoa_path = DATA_DIR / "reference" / "phenotype.hpoa"
     disease_label_cache.update(_load_disease_labels(hpoa_path))
@@ -579,7 +602,8 @@ class PhenotypeSearchRequest(BaseModel):
     method: str = "lin"            # "lin" (default) or "resnik"
     limit: int = 20
     include_disease_phenotypes: bool = False
-    include_saudi: bool = True
+    include_saudi: bool = True             # Saudi clinical-notes sources
+    include_saudi_literature: bool = True  # Saudi literature-curated case reports (prefix M)
     include_ddd: bool = False
     include_literature: bool = False
     include_clinvar: bool = False
@@ -742,8 +766,15 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
         is_ddd = "ddd" in src.lower()
         is_clinvar = src == "ClinVar"
         is_lit = not is_saudi and not is_ddd and not is_clinvar
+        # Among Saudi cases, separate literature-curated case reports (prefix M /
+        # marwa-variants) from the clinical-notes sources, so the two can be
+        # filtered independently (Reviewer 2: clinic-vs-case-report distinction).
+        is_saudi_lit = is_saudi and src in SAUDI_LITERATURE_SOURCES
+        is_saudi_clin = is_saudi and not is_saudi_lit
 
-        if is_saudi and not req.include_saudi:
+        if is_saudi_clin and not req.include_saudi:
+            continue
+        if is_saudi_lit and not req.include_saudi_literature:
             continue
         if is_ddd and not req.include_ddd:
             continue
@@ -1294,17 +1325,24 @@ def sparql_proxy(body: dict):
 
 @app.get("/api/phenopacket/{case_id:path}/download")
 def download_phenopacket(case_id: str):
-    """Download the phenopacket JSON for a specific case."""
-    # Try generated_v2 directory first, then generated
-    for subdir in ["generated_v2", "generated"]:
-        path = Path("phenopackets") / subdir / f"{case_id}.json"
-        if path.exists():
-            return FileResponse(
-                path,
-                media_type="application/json",
-                filename=f"{case_id}.json",
-            )
-    raise HTTPException(404, f"Phenopacket not found: {case_id}")
+    """Download the phenopacket JSON for a specific case.
+
+    Served from the in-memory index built from PAVS_phenopackets.json at startup,
+    so it works for the canonical `PAVS:<id>` keys without depending on
+    individual per-case files on disk.
+    """
+    pp = phenopacket_index.get(case_id)
+    if pp is None:
+        # Tolerate clients that strip or alter the prefix.
+        if not case_id.startswith("PAVS:"):
+            pp = phenopacket_index.get(f"PAVS:{case_id}")
+    if pp is None:
+        raise HTTPException(404, f"Phenopacket not found: {case_id}")
+    safe_name = case_id.replace(":", "_").replace("/", "_")
+    return JSONResponse(
+        content=pp,
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}.json"'},
+    )
 
 
 @app.get("/api/togovar-search")
@@ -1345,12 +1383,24 @@ def togovar_search(chrom: str = Query(...), pos: int = Query(...)):
 
 @app.get("/api/phenopackets/download-all")
 def download_all_phenopackets():
-    """Stream the PAVS_phenopackets.zip bundle."""
+    """Download the full phenopacket collection.
+
+    Prefer the pre-built zip bundle; if it is not present, fall back to the
+    combined PAVS_phenopackets.json so the endpoint never 404s when the data
+    is available in either form.
+    """
     zip_path = DATA_DIR / "PAVS_phenopackets.zip"
-    if not zip_path.exists():
-        raise HTTPException(404, "Combined phenopackets zip not available")
-    return FileResponse(
-        zip_path,
-        media_type="application/zip",
-        filename="PAVS_phenopackets.zip",
-    )
+    if zip_path.exists():
+        return FileResponse(
+            zip_path,
+            media_type="application/zip",
+            filename="PAVS_phenopackets.zip",
+        )
+    json_path = DATA_DIR / "PAVS_phenopackets.json"
+    if json_path.exists():
+        return FileResponse(
+            json_path,
+            media_type="application/json",
+            filename="PAVS_phenopackets.json",
+        )
+    raise HTTPException(404, "Combined phenopackets bundle not available")

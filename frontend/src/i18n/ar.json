@@ -18,7 +18,8 @@
     "lin": "Lin + BMA (الافتراضي)",
     "resnik": "Resnik + BMA",
     "cohorts": "المجموعات",
-    "includeSaudi": "سعودي",
+    "includeSaudi": "سعودي (سريري)",
+    "includeSaudiLiterature": "سعودي (أدبيات)",
     "includeDDD": "DDD",
     "includeLiterature": "الأدبيات",
     "onlyDiagnosed": "إظهار الحالات المشخصة فقط (بجين/متغير)",
@@ -48,7 +49,8 @@
     "togovar": "TogoVar",
     "novel": "جديد في المجموعة السعودية",
     "download": "تنزيل Phenopacket",
-    "downloadAll": "تنزيل جميع الـ Phenopackets السعودية"
+    "downloadAll": "تنزيل جميع الـ Phenopackets السعودية",
+    "downloadResults": "تنزيل النتائج (TSV)"
   },
   "variant": {
     "byGene": "بالجين",

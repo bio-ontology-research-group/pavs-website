@@ -18,7 +18,8 @@
     "lin": "Lin + BMA (default)",
     "resnik": "Resnik + BMA",
     "cohorts": "Cohorts",
-    "includeSaudi": "Saudi",
+    "includeSaudi": "Saudi (clinical)",
+    "includeSaudiLiterature": "Saudi (literature)",
     "includeDDD": "DDD",
     "includeLiterature": "Literature",
     "onlyDiagnosed": "Show only diagnosed cases (with gene/variant)",
@@ -48,7 +49,8 @@
     "togovar": "TogoVar",
     "novel": "Novel in Saudi cohort",
     "download": "Download Phenopacket",
-    "downloadAll": "Download All Saudi Phenopackets"
+    "downloadAll": "Download All Saudi Phenopackets",
+    "downloadResults": "Download results (TSV)"
   },
   "variant": {
     "byGene": "By Gene",

@@ -367,10 +367,11 @@ select option {
   text-transform: uppercase;
 }
 .badge-saudi    { background: #c6f6d5; color: #22543d; }
-/* Saudi literature-curated case reports: same population (green) as the clinical
-   Saudi sources, distinguished by an inner border to mark the different phenotype
-   provenance (case report vs. clinical notes). */
-.badge-saudi-lit { background: #c6f6d5; color: #22543d; box-shadow: inset 0 0 0 1.5px #38a169; }
+/* Saudi literature-curated case reports: same Saudi population as the clinical
+   sources, but a different phenotype provenance (case report vs. clinical notes).
+   Given a distinct amber fill (not just a border) so the two Saudi subcohorts are
+   clearly separable at a glance, which the clinical/literature split requires. */
+.badge-saudi-lit { background: #feebc8; color: #7b341e; box-shadow: inset 0 0 0 1.5px #dd6b20; }
 /* Mixed-population cohort (Ziats): non-Saudi/mixed, clinically derived. */
 .badge-mixed    { background: #b2f5ea; color: #234e52; }
 .badge-ddd      { background: #e2e8f0; color: #4a5568; }

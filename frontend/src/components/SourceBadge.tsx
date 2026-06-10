@@ -17,7 +17,7 @@ const SOURCE_CONFIG: Record<string, { label: string; className: string; provenan
   'ahmed-pmid28454995':   { label: 'Saudi · clinical',    className: 'badge-saudi',      provenance: 'clinical' },
   'fawzan-variants':      { label: 'Saudi · clinical',    className: 'badge-saudi',      provenance: 'clinical' },
   'PMC6562004':           { label: 'Saudi · clinical',    className: 'badge-saudi',      provenance: 'clinical' },
-  'marwa-variants':       { label: 'Saudi · case report', className: 'badge-saudi-lit',  provenance: 'caseReport' },
+  'marwa-variants':       { label: 'Saudi · literature',  className: 'badge-saudi-lit',  provenance: 'caseReport' },
   'PMC7082194':           { label: 'Mixed · clinical',    className: 'badge-mixed',      provenance: 'clinical' },
   'ddd-diagnoses':        { label: 'DDD · research',       className: 'badge-ddd',        provenance: 'research' },
   'Literature':           { label: 'Literature',           className: 'badge-literature', provenance: 'caseReport' },

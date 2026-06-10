@@ -26,6 +26,7 @@ const PhenotypeSearch: React.FC = () => {
   const [selectedHpos, setSelectedHpos] = useState<HpoOption[]>([]);
   const [method, setMethod] = useState<'lin' | 'resnik'>('lin');
   const [includeSaudi, setIncludeSaudi] = useState(true);
+  const [includeSaudiLiterature, setIncludeSaudiLiterature] = useState(true);
   const [includeDDD, setIncludeDDD] = useState(false);
   const [includeLiterature, setIncludeLiterature] = useState(false);
   const [onlyDiagnosed, setOnlyDiagnosed] = useState(false);
@@ -46,6 +47,7 @@ const PhenotypeSearch: React.FC = () => {
     const hpos = searchParams.get('hpos');
     const m = searchParams.get('method');
     const sau = searchParams.get('saudi') !== 'false'; // default true
+    const saulit = searchParams.get('saudilit') !== 'false'; // default true
     const ddd = searchParams.get('ddd') === 'true';
     const lit = searchParams.get('literature') === 'true';
     const diagnosed = searchParams.get('diagnosed') === 'true';
@@ -71,6 +73,7 @@ const PhenotypeSearch: React.FC = () => {
         method: (m as any) || 'lin',
         limit: lim,
         include_saudi: sau,
+        include_saudi_literature: saulit,
         include_ddd: ddd,
         include_literature: lit,
         only_diagnosed: diagnosed
@@ -83,6 +86,7 @@ const PhenotypeSearch: React.FC = () => {
 
     if (m === 'lin' || m === 'resnik') setMethod(m);
     setIncludeSaudi(sau);
+    setIncludeSaudiLiterature(saulit);
     setIncludeDDD(ddd);
     setIncludeLiterature(lit);
     setOnlyDiagnosed(diagnosed);
@@ -136,6 +140,7 @@ const PhenotypeSearch: React.FC = () => {
       hpos: hpoIds.join(','),
       method,
       saudi: includeSaudi.toString(),
+      saudilit: includeSaudiLiterature.toString(),
       ddd: includeDDD.toString(),
       literature: includeLiterature.toString(),
       diagnosed: onlyDiagnosed.toString(),
@@ -148,6 +153,7 @@ const PhenotypeSearch: React.FC = () => {
       method,
       limit: fetchLimit,
       include_saudi: includeSaudi,
+      include_saudi_literature: includeSaudiLiterature,
       include_ddd: includeDDD,
       include_literature: includeLiterature,
       only_diagnosed: onlyDiagnosed,
@@ -162,6 +168,29 @@ const PhenotypeSearch: React.FC = () => {
   };
 
   const isClinVarCase = (id: string) => id.startsWith('ClinVar:');
+
+  const exportTsv = () => {
+    if (!results.length) return;
+    const cols = ['score', 'id', 'gene', 'disease', 'suggested_disease', 'source', 'is_saudi'];
+    const esc = (v: any) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+    const lines = [cols.join('\t')];
+    for (const r of results) {
+      lines.push([
+        r.score.toFixed(6), r.id, r.gene, r.disease,
+        r.suggested_disease, r.source, r.is_saudi,
+      ].map(esc).join('\t'));
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/tab-separated-values' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pavs_search_results.tsv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const visible = results.slice(0, displayCount);
   const hasMore = displayCount < results.length;
 
@@ -215,6 +244,11 @@ const PhenotypeSearch: React.FC = () => {
               {' '}{t('search.includeSaudi')}
             </label>
             <label>
+              <input type="checkbox" checked={includeSaudiLiterature}
+                onChange={e => setIncludeSaudiLiterature(e.target.checked)} />
+              {' '}{t('search.includeSaudiLiterature')}
+            </label>
+            <label>
               <input type="checkbox" checked={includeDDD}
                 onChange={e => setIncludeDDD(e.target.checked)} />
               {' '}{t('search.includeDDD')}
@@ -248,6 +282,11 @@ const PhenotypeSearch: React.FC = () => {
 
       {results.length > 0 && (
         <div className="results-table-wrapper">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0.25rem 0' }}>
+            <button className="btn-secondary" onClick={exportTsv}>
+              ⬇ {t('results.downloadResults')}
+            </button>
+          </div>
           <table className="results-table">
             <thead>
               <tr>

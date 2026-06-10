@@ -14,6 +14,11 @@ SPARQL CLEAR SILENT GRAPH <https://pavs.phenomebrowser.net/graph/metadata>;
 
 -- Register TTL files for bulk loading (ld_dir queues them; rdf_loader_run processes)
 ld_dir('/rdf_import', 'cases.ttl',      'https://pavs.phenomebrowser.net/graph/cases');
+-- additive supplements to the cases graph (see PAVS_KG_DEPLOYMENT.md §4b/§4c):
+-- variant annotations (zygosity/VEP/gnomAD/ClinVar) absent from the source TSV,
+-- and the Phenopacket Store overlap flags (dct:source, Reviewer 1.1).
+ld_dir('/rdf_import', 'variant_annotations.ttl', 'https://pavs.phenomebrowser.net/graph/cases');
+ld_dir('/rdf_import', 'overlap_flags.ttl',       'https://pavs.phenomebrowser.net/graph/cases');
 ld_dir('/rdf_import', 'genes.ttl',      'https://pavs.phenomebrowser.net/graph/genes');
 ld_dir('/rdf_import', 'hpoa.ttl',       'https://pavs.phenomebrowser.net/graph/hpoa');
 ld_dir('/rdf_import', 'hpo_ic.ttl',     'https://pavs.phenomebrowser.net/graph/hpo-ic');
