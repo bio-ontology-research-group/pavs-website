@@ -42,10 +42,40 @@ log = logging.getLogger("pavs")
 SPARQL_ENDPOINT = os.environ.get("SPARQL_ENDPOINT", "http://localhost:8890/sparql")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "data"))
 
-# Saudi sources whose phenotypes are curated from published case reports (prefix M)
-# rather than from clinical notes. Used to separate the two Saudi subcohorts in
-# search filtering and display (cf. SourceBadge on the frontend).
-SAUDI_LITERATURE_SOURCES = {"marwa-variants"}
+# Authoritative cohort taxonomy, keyed by the `pavs:source` literal in the graph.
+# The graph's `isSaudi` flag is unreliable for filtering (the mixed-population
+# Ziats cohort, PMC7082194, is flagged isSaudi=true), so cohort membership is
+# derived from the source instead. These sets mirror the SourceBadge config on
+# the frontend and the five-way split used in the paper.
+SAUDI_CLINICAL_SOURCES = {            # routine-care clinical notes (prefixes A, B, F, P)
+    "ahmed-variants", "ahmed-pmid28454995", "fawzan-variants", "PMC6562004",
+}
+SAUDI_LITERATURE_SOURCES = {"marwa-variants"}   # published Saudi case reports (prefix M)
+MIXED_SOURCES = {"PMC7082194"}                  # mixed-population cohort, Ziats (prefix Q)
+
+
+def classify_cohort(source: str, is_saudi_flag: bool = False) -> str:
+    """Map a case's source to one of the six search cohorts.
+
+    Returns one of: saudi-clinical, saudi-literature, mixed, ddd, literature,
+    clinvar. Source-driven so the mixed cohort never leaks into "Saudi".
+    """
+    if source == "ClinVar":
+        return "clinvar"
+    if "ddd" in source.lower():
+        return "ddd"
+    if source in MIXED_SOURCES:
+        return "mixed"
+    if source in SAUDI_LITERATURE_SOURCES:
+        return "saudi-literature"
+    if source in SAUDI_CLINICAL_SOURCES:
+        return "saudi-clinical"
+    if source == "Literature":
+        return "literature"
+    # Fallback for any future source: trust the Saudi flag, else treat as literature.
+    if is_saudi_flag or "saudi" in source.lower():
+        return "saudi-clinical"
+    return "literature"
 HPO_TRANSLATION_PATH = Path(os.environ.get(
     "HPO_TRANSLATION_PATH",
     str(DATA_DIR.parent / "translation" / "hpo_arabic_translations.json"),
@@ -602,11 +632,14 @@ class PhenotypeSearchRequest(BaseModel):
     method: str = "lin"            # "lin" (default) or "resnik"
     limit: int = 20
     include_disease_phenotypes: bool = False
-    include_saudi: bool = True             # Saudi clinical-notes sources
-    include_saudi_literature: bool = True  # Saudi literature-curated case reports (prefix M)
-    include_ddd: bool = False
-    include_literature: bool = False
-    include_clinvar: bool = False
+    # Cohort filters. Default = Saudi only (clinical + literature); the comparison
+    # cohorts (mixed, DDD, international literature, ClinVar) are opt-in.
+    include_saudi: bool = True             # Saudi clinical-notes sources (A, B, F, P)
+    include_saudi_literature: bool = True  # Saudi literature-curated case reports (M)
+    include_mixed: bool = False            # mixed-population cohort, Ziats (Q)
+    include_ddd: bool = False              # Deciphering Developmental Disorders
+    include_literature: bool = False       # international Phenopacket Store
+    include_clinvar: bool = False          # ClinVar pathogenic variants
     only_diagnosed: bool = False
 
 
@@ -758,29 +791,22 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
     # Pre-expand query terms once
     q_exp = expand_hpos(req.hpo_ids, ancestor_cache)
 
+    # Each cohort is gated by its own flag; membership is source-driven so the
+    # mixed-population cohort never leaks into a Saudi-only search.
+    cohort_enabled = {
+        "saudi-clinical":   req.include_saudi,
+        "saudi-literature": req.include_saudi_literature,
+        "mixed":            req.include_mixed,
+        "ddd":              req.include_ddd,
+        "literature":       req.include_literature,
+        "clinvar":          req.include_clinvar,
+    }
+
     results = []
     for case in case_hpo_cache:
         src = case.get("source", "")
-        # Robust is_saudi: check is_saudi flag OR source name
-        is_saudi = case.get("is_saudi", False) or "saudi" in src.lower()
-        is_ddd = "ddd" in src.lower()
-        is_clinvar = src == "ClinVar"
-        is_lit = not is_saudi and not is_ddd and not is_clinvar
-        # Among Saudi cases, separate literature-curated case reports (prefix M /
-        # marwa-variants) from the clinical-notes sources, so the two can be
-        # filtered independently (Reviewer 2: clinic-vs-case-report distinction).
-        is_saudi_lit = is_saudi and src in SAUDI_LITERATURE_SOURCES
-        is_saudi_clin = is_saudi and not is_saudi_lit
-
-        if is_saudi_clin and not req.include_saudi:
-            continue
-        if is_saudi_lit and not req.include_saudi_literature:
-            continue
-        if is_ddd and not req.include_ddd:
-            continue
-        if is_lit and not req.include_literature:
-            continue
-        if is_clinvar and not req.include_clinvar:
+        cohort = classify_cohort(src, case.get("is_saudi", False))
+        if not cohort_enabled.get(cohort, False):
             continue
 
         if req.only_diagnosed and not case.get("gene"):
@@ -820,7 +846,8 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
                 "disease": disease_display,
                 "suggested_disease": suggested_disease,
                 "source": case["source"],
-                "is_saudi": is_saudi,
+                "cohort": cohort,
+                "is_saudi": cohort in ("saudi-clinical", "saudi-literature"),
                 "hpo_ids": case["hpo_ids"],
                 "score": round(score, 6),
             })
@@ -1214,12 +1241,18 @@ def gene_cases(
 def phenotype_cases(
     hp_id: str,
     include_children: bool = True,
+    include_saudi: bool = True,
+    include_saudi_literature: bool = True,
+    include_mixed: bool = False,
     include_ddd: bool = False,
     include_literature: bool = False,
+    include_clinvar: bool = False,
     limit: int = 500,
 ):
     """Return cases that have (or whose descendants have) the given HPO term.
     Uses the in-memory case_hpo_cache + descendant_cache — no SPARQL at query time.
+    Cohort filtering is source-driven and matches /api/search/phenotype
+    (default = Saudi only; comparison cohorts are opt-in).
     """
     # Normalise the HP ID
     hp_id = hp_id.strip()
@@ -1233,14 +1266,20 @@ def phenotype_cases(
     if include_children:
         match_ids |= descendant_cache.get(hp_id, set())
 
+    cohort_enabled = {
+        "saudi-clinical":   include_saudi,
+        "saudi-literature": include_saudi_literature,
+        "mixed":            include_mixed,
+        "ddd":              include_ddd,
+        "literature":       include_literature,
+        "clinvar":          include_clinvar,
+    }
+
     results = []
     for case in case_hpo_cache:
         source = case.get("source", "")
-        is_saudi = case.get("is_saudi", False)
-        is_ddd = "ddd" in source.lower()
-        is_lit = not is_saudi and not is_ddd
-
-        if not is_saudi and not (include_ddd and is_ddd) and not (include_literature and is_lit):
+        cohort = classify_cohort(source, case.get("is_saudi", False))
+        if not cohort_enabled.get(cohort, False):
             continue
 
         case_hpos = set(case["hpo_ids"])
@@ -1250,7 +1289,8 @@ def phenotype_cases(
                 "gene": case["gene"],
                 "disease": case["disease"],
                 "source": source,
-                "is_saudi": is_saudi,
+                "cohort": cohort,
+                "is_saudi": cohort in ("saudi-clinical", "saudi-literature"),
                 "hpo_ids": case["hpo_ids"],
             })
         if len(results) >= limit:

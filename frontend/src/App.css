@@ -208,6 +208,49 @@ select option {
 
 .search-actions { display: flex; gap: 10px; margin-top: 8px; }
 
+/* ===== Cohort selector ===== */
+.cohort-group .cohort-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+.cohort-group .cohort-row label { font-weight: 400; cursor: pointer; }
+.cohort-group-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #718096;
+  min-width: 5.5rem;
+}
+.cohort-help-toggle,
+.cohort-reset {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0 0.25rem;
+}
+.cohort-help-toggle { color: var(--color-primary); }
+.cohort-reset {
+  color: #3182ce;
+  text-decoration: underline;
+  float: right;
+  font-weight: 400;
+}
+.cohort-help {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #4a5568;
+}
+.cohort-help ul { margin: 0 0 0.4rem; padding-left: 1.1rem; }
+.cohort-help li { margin: 0.15rem 0; }
+.cohort-help-note { margin: 0; font-style: italic; color: #718096; }
+
 /* ===== Buttons ===== */
 
 .btn-primary {

@@ -16,6 +16,7 @@ interface CaseResult {
   disease: string;
   suggested_disease: string;
   source: string;
+  cohort?: string;
   score: number;
   is_saudi: boolean;
 }
@@ -27,8 +28,11 @@ const PhenotypeSearch: React.FC = () => {
   const [method, setMethod] = useState<'lin' | 'resnik'>('lin');
   const [includeSaudi, setIncludeSaudi] = useState(true);
   const [includeSaudiLiterature, setIncludeSaudiLiterature] = useState(true);
+  const [includeMixed, setIncludeMixed] = useState(false);
   const [includeDDD, setIncludeDDD] = useState(false);
   const [includeLiterature, setIncludeLiterature] = useState(false);
+  const [includeClinVar, setIncludeClinVar] = useState(false);
+  const [showCohortHelp, setShowCohortHelp] = useState(false);
   const [onlyDiagnosed, setOnlyDiagnosed] = useState(false);
   const [fetchLimit, setFetchLimit] = useState(200);
   const [results, setResults] = useState<CaseResult[]>([]);
@@ -48,8 +52,10 @@ const PhenotypeSearch: React.FC = () => {
     const m = searchParams.get('method');
     const sau = searchParams.get('saudi') !== 'false'; // default true
     const saulit = searchParams.get('saudilit') !== 'false'; // default true
+    const mixed = searchParams.get('mixed') === 'true';
     const ddd = searchParams.get('ddd') === 'true';
     const lit = searchParams.get('literature') === 'true';
+    const clinvar = searchParams.get('clinvar') === 'true';
     const diagnosed = searchParams.get('diagnosed') === 'true';
     const lim = parseInt(searchParams.get('limit') || '200');
 
@@ -74,8 +80,10 @@ const PhenotypeSearch: React.FC = () => {
         limit: lim,
         include_saudi: sau,
         include_saudi_literature: saulit,
+        include_mixed: mixed,
         include_ddd: ddd,
         include_literature: lit,
+        include_clinvar: clinvar,
         only_diagnosed: diagnosed
       });
     } else {
@@ -87,8 +95,10 @@ const PhenotypeSearch: React.FC = () => {
     if (m === 'lin' || m === 'resnik') setMethod(m);
     setIncludeSaudi(sau);
     setIncludeSaudiLiterature(saulit);
+    setIncludeMixed(mixed);
     setIncludeDDD(ddd);
     setIncludeLiterature(lit);
+    setIncludeClinVar(clinvar);
     setOnlyDiagnosed(diagnosed);
     setFetchLimit(lim);
   }, [searchParams]);
@@ -141,8 +151,10 @@ const PhenotypeSearch: React.FC = () => {
       method,
       saudi: includeSaudi.toString(),
       saudilit: includeSaudiLiterature.toString(),
+      mixed: includeMixed.toString(),
       ddd: includeDDD.toString(),
       literature: includeLiterature.toString(),
+      clinvar: includeClinVar.toString(),
       diagnosed: onlyDiagnosed.toString(),
       limit: fetchLimit.toString()
     };
@@ -154,8 +166,10 @@ const PhenotypeSearch: React.FC = () => {
       limit: fetchLimit,
       include_saudi: includeSaudi,
       include_saudi_literature: includeSaudiLiterature,
+      include_mixed: includeMixed,
       include_ddd: includeDDD,
       include_literature: includeLiterature,
+      include_clinvar: includeClinVar,
       only_diagnosed: onlyDiagnosed,
     });
   };
@@ -171,13 +185,13 @@ const PhenotypeSearch: React.FC = () => {
 
   const exportTsv = () => {
     if (!results.length) return;
-    const cols = ['score', 'id', 'gene', 'disease', 'suggested_disease', 'source', 'is_saudi'];
+    const cols = ['score', 'id', 'gene', 'disease', 'suggested_disease', 'source', 'cohort', 'is_saudi'];
     const esc = (v: any) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim();
     const lines = [cols.join('\t')];
     for (const r of results) {
       lines.push([
         r.score.toFixed(6), r.id, r.gene, r.disease,
-        r.suggested_disease, r.source, r.is_saudi,
+        r.suggested_disease, r.source, r.cohort, r.is_saudi,
       ].map(esc).join('\t'));
     }
     const blob = new Blob([lines.join('\n')], { type: 'text/tab-separated-values' });
@@ -235,30 +249,71 @@ const PhenotypeSearch: React.FC = () => {
           </label>
         </div>
 
-        <div className="form-group">
-          <label style={{ fontWeight: 600 }}>{t('search.cohorts')}</label>
-          <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
-            <label>
+        <div className="form-group cohort-group">
+          <label style={{ fontWeight: 600 }}>
+            {t('search.cohorts')}{' '}
+            <button type="button" className="cohort-help-toggle"
+              onClick={() => setShowCohortHelp(v => !v)}
+              aria-expanded={showCohortHelp} title={t('search.cohortHelpTitle')}>ⓘ</button>
+            <button type="button" className="cohort-reset"
+              onClick={() => {
+                setIncludeSaudi(true); setIncludeSaudiLiterature(true);
+                setIncludeMixed(false); setIncludeDDD(false);
+                setIncludeLiterature(false); setIncludeClinVar(false);
+              }}>{t('search.cohortSaudiOnly')}</button>
+          </label>
+
+          <div className="cohort-row">
+            <span className="cohort-group-label">{t('search.cohortSaudi')}</span>
+            <label title={t('search.tipSaudiClinical')}>
               <input type="checkbox" checked={includeSaudi}
                 onChange={e => setIncludeSaudi(e.target.checked)} />
               {' '}{t('search.includeSaudi')}
             </label>
-            <label>
+            <label title={t('search.tipSaudiLiterature')}>
               <input type="checkbox" checked={includeSaudiLiterature}
                 onChange={e => setIncludeSaudiLiterature(e.target.checked)} />
               {' '}{t('search.includeSaudiLiterature')}
             </label>
-            <label>
+          </div>
+
+          <div className="cohort-row">
+            <span className="cohort-group-label">{t('search.cohortComparison')}</span>
+            <label title={t('search.tipMixed')}>
+              <input type="checkbox" checked={includeMixed}
+                onChange={e => setIncludeMixed(e.target.checked)} />
+              {' '}{t('search.includeMixed')}
+            </label>
+            <label title={t('search.tipDDD')}>
               <input type="checkbox" checked={includeDDD}
                 onChange={e => setIncludeDDD(e.target.checked)} />
               {' '}{t('search.includeDDD')}
             </label>
-            <label>
+            <label title={t('search.tipLiterature')}>
               <input type="checkbox" checked={includeLiterature}
                 onChange={e => setIncludeLiterature(e.target.checked)} />
               {' '}{t('search.includeLiterature')}
             </label>
+            <label title={t('search.tipClinVar')}>
+              <input type="checkbox" checked={includeClinVar}
+                onChange={e => setIncludeClinVar(e.target.checked)} />
+              {' '}{t('search.includeClinVar')}
+            </label>
           </div>
+
+          {showCohortHelp && (
+            <div className="cohort-help">
+              <ul>
+                <li><strong>{t('search.includeSaudi')}</strong> — {t('search.tipSaudiClinical')}</li>
+                <li><strong>{t('search.includeSaudiLiterature')}</strong> — {t('search.tipSaudiLiterature')}</li>
+                <li><strong>{t('search.includeMixed')}</strong> — {t('search.tipMixed')}</li>
+                <li><strong>{t('search.includeDDD')}</strong> — {t('search.tipDDD')}</li>
+                <li><strong>{t('search.includeLiterature')}</strong> — {t('search.tipLiterature')}</li>
+                <li><strong>{t('search.includeClinVar')}</strong> — {t('search.tipClinVar')}</li>
+              </ul>
+              <p className="cohort-help-note">{t('search.cohortDefaultNote')}</p>
+            </div>
+          )}
         </div>
 
         <div className="form-group">
