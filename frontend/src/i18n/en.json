@@ -146,7 +146,7 @@
       "constrainedGenes": "Most constrained genes (LOEUF < 0.15)",
       "diseaseHpo": "HPO terms for a disease (OMIM:272200)",
       "consanguineous": "Cases with consanguineous parents",
-      "recessiveBurden": "Recessive burden: genes most often homozygous"
+      "saudiGeneBurden": "Most frequently affected genes (Saudi cohort)"
     }
   },
   "source": {

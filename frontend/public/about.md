@@ -79,10 +79,11 @@ uses (the queries are available in the **SPARQL** tab):
    BMA). On sparse clinical profiles this is best used for shortlisting rather than
    single top-1 prediction, and can be combined with the variant-level evidence
    (VEP, SIFT, PolyPhen-2, gnomAD) stored for each variant.
-3. **Recessive-disease epidemiology.** The *"Recessive burden"* SPARQL example
-   ranks the genes most frequently implicated in homozygous form in the cohort,
-   supporting studies of the recessive disease burden in consanguineous
-   populations.
+3. **Population-specific disease burden.** The *"Most frequently affected genes
+   (Saudi cohort)"* SPARQL example ranks the genes most often implicated in Saudi
+   cases (e.g. *ELAC2*, *ATP7B*); in a consanguineous population these are
+   dominated by autosomal-recessive disease genes. Per-case zygosity for
+   homozygosity analyses is available in the downloadable phenopackets and TSV.
 
 Cases without phenotype annotations (e.g. unaffected relatives or records with
 only a suspected diagnosis) are retained for their genotype and family-structure

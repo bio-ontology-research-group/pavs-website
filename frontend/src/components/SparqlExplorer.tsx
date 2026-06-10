@@ -110,21 +110,21 @@ LIMIT 30`,
 LIMIT 50`,
   },
   {
-    // Use case: recessive-disease burden — genes most often implicated in
-    // homozygous form in the Saudi cohort (GENO:0000136 = homozygous).
-    key: 'recessiveBurden',
-    query: `${PREFIXES}PREFIX geno: <http://purl.obolibrary.org/obo/GENO_>
-SELECT ?gene (COUNT(DISTINCT ?case) AS ?nHomozygous) WHERE {
+    // Use case: population-specific disease burden — genes most frequently
+    // affected in the Saudi cohort. In a consanguineous population these are
+    // dominated by autosomal-recessive disease genes (e.g. ELAC2, ATP7B).
+    key: 'saudiGeneBurden',
+    query: `${PREFIXES}SELECT ?gene (COUNT(DISTINCT ?case) AS ?nSaudiCases) WHERE {
   GRAPH <https://pavs.phenomebrowser.net/graph/cases> {
     ?case a pavs:Case ;
+          pavs:isSaudi true ;
           pavs:hasVariant ?v .
-    ?v pavs:affectsGene ?gUri ;
-       pavs:zygosity geno:0000136 .
+    ?v pavs:affectsGene ?gUri .
     BIND(STRAFTER(STR(?gUri), "hgnc.symbol/") AS ?gene)
   }
 }
 GROUP BY ?gene
-ORDER BY DESC(?nHomozygous)
+ORDER BY DESC(?nSaudiCases)
 LIMIT 30`,
   },
 ];
