@@ -33,7 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel
 
-from .similarity import bma_similarity, bma_similarity_fast, expand_hpos
+from .similarity import bma_similarity_fast, expand_hpos
 from . import sparql_queries as Q
 
 logging.basicConfig(level=logging.INFO)
@@ -788,8 +788,13 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
 
     method = req.method if req.method in ("lin", "resnik") else "lin"
 
-    # Pre-expand query terms once
-    q_exp = expand_hpos(req.hpo_ids, ancestor_cache)
+    # BMA runs on the DIRECT query terms (deduplicated). The MICA computation
+    # inside the pairwise similarity already accounts for the HPO hierarchy, so
+    # there is no need to ancestor-expand the term sets. This matches pyhpo's
+    # funSimAvg (the method behind the paper's evaluation) and avoids the
+    # all-pairs blow-up of expanded sets (hundreds of terms per side), which is
+    # what made the search slow once the ClinVar cohort was included.
+    q_direct = list(dict.fromkeys(req.hpo_ids))
 
     # Each cohort is gated by its own flag; membership is source-driven so the
     # mixed-population cohort never leaks into a Saudi-only search.
@@ -812,21 +817,22 @@ def search_by_phenotype(req: PhenotypeSearchRequest):
         if req.only_diagnosed and not case.get("gene"):
             continue
 
-        # Optionally expand with disease HPO terms (modifies target only, uses in-memory cache)
+        # Target = the case's DIRECT HPO terms, optionally augmented with the
+        # associated disease's HPOA terms. No ancestor expansion — the MICA in
+        # the pairwise similarity handles the hierarchy.
         if req.include_disease_phenotypes and case.get("disease"):
             disease_hpos = disease_hpo_cache.get(case["disease"], [])
             if disease_hpos:
-                extra = list(set(case["hpo_ids"]) | set(disease_hpos))
-                t_exp = expand_hpos(extra, ancestor_cache)
+                t_direct = list(set(case["hpo_ids"]) | set(disease_hpos))
             else:
-                t_exp = case.get("hpo_expanded") or expand_hpos(case["hpo_ids"], ancestor_cache)
+                t_direct = case["hpo_ids"]
         else:
-            t_exp = case.get("hpo_expanded") or expand_hpos(case["hpo_ids"], ancestor_cache)
+            t_direct = case["hpo_ids"]
 
-        if not t_exp:
+        if not t_direct:
             continue
 
-        score = bma_similarity_fast(q_exp, t_exp, ic_cache, ancestor_cache, method)
+        score = bma_similarity_fast(q_direct, t_direct, ic_cache, ancestor_cache, method)
         if score > 0:
             gene = case.get("gene", "")
             disease_raw = case.get("disease", "")

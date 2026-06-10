@@ -124,18 +124,23 @@ def bma_similarity(
 
 
 def bma_similarity_fast(
-    q_exp: List[str],
-    t_exp: List[str],
+    q_terms: List[str],
+    t_terms: List[str],
     ic: Dict[str, float],
     ancestors: Dict[str, Set[str]],
     method: str = "lin",
 ) -> float:
     """
-    Symmetric BMA using pre-expanded term lists.
-    Call expand_hpos() on both sides before using this.
+    Symmetric Best-Match Average over two term lists, identical in aggregation
+    to pyhpo's ``funSimAvg`` (mean of row maxima + mean of column maxima, / 2).
+
+    Pass the DIRECT HPO term sets, not ancestor-expanded ones: the MICA lookup
+    inside the pairwise similarity already accounts for the hierarchy, so
+    expanding the inputs only inflates the all-pairs cost without changing the
+    intended measure. (This mirrors the pyhpo-based evaluation in the paper.)
     """
-    if not q_exp or not t_exp:
+    if not q_terms or not t_terms:
         return 0.0
-    q_to_t = _bma_fast(q_exp, t_exp, ic, ancestors, method)
-    t_to_q = _bma_fast(t_exp, q_exp, ic, ancestors, method)
+    q_to_t = _bma_fast(q_terms, t_terms, ic, ancestors, method)
+    t_to_q = _bma_fast(t_terms, q_terms, ic, ancestors, method)
     return (q_to_t + t_to_q) / 2.0
