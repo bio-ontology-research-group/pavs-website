@@ -1406,6 +1406,25 @@ def download_phenopacket(case_id: str):
     )
 
 
+def _togovar_variant_url(body: dict) -> Optional[str]:
+    """Build a TogoVar variant-page URL from a /api/search/variant response.
+
+    TogoVar variant pages are addressable by dbSNP rsID. The search API returns
+    the colocated rsID(s) under ``existing_variations`` on each result; it no
+    longer exposes a ``tgv`` ``id`` field on the search hit (relying on that
+    stale field silently broke the link, always falling back to the homepage).
+    Returns the variant URL, or None when there is no usable rsID.
+    """
+    results = body.get("data", []) if isinstance(body, dict) else []
+    if not results:
+        return None
+    rsids = results[0].get("existing_variations") or []
+    rsid = next((r for r in rsids if str(r).startswith("rs")), None)
+    if not rsid:
+        return None
+    return f"https://grch38.togovar.org/variant/{rsid}"
+
+
 @app.get("/api/togovar-search")
 def togovar_search(chrom: str = Query(...), pos: int = Query(...)):
     """Proxy variant lookup to TogoVar API and redirect to the variant page.
@@ -1428,17 +1447,13 @@ def togovar_search(chrom: str = Query(...), pos: int = Query(...)):
     try:
         with urllib.request.urlopen(req_obj, timeout=10) as resp:
             body = json.loads(resp.read())
-            results = body.get("data", [])
-            if results:
-                tgv_id = results[0].get("id", "")
-                if tgv_id:
-                    return RedirectResponse(
-                        f"https://grch38.togovar.org/variant/{tgv_id}",
-                        status_code=302,
-                    )
+            variant_url = _togovar_variant_url(body)
+            if variant_url:
+                return RedirectResponse(variant_url, status_code=302)
     except Exception as e:
         log.warning(f"TogoVar API call failed for {chrom_clean}:{pos} — {e}")
-    # Variant not in TogoVar (e.g. population-specific); send to homepage
+    # Variant not in TogoVar (e.g. population-specific) or has no rsID;
+    # send to homepage.
     return RedirectResponse("https://grch38.togovar.org/", status_code=302)
 
 
