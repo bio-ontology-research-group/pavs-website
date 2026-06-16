@@ -5,10 +5,103 @@
     <link rel="icon" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#1a7c5a" />
-    <meta name="description" content="PAVS — Phenotypic and Variant Standardization for Saudi Arabian Rare Disease Cases" />
-    <title>PAVS</title>
+
+    <!-- Primary SEO metadata -->
+    <title>PAVS — Phenotype-Associated Variants in Saudi Arabia</title>
+    <meta name="description" content="PAVS is a curated, openly licensed knowledge graph of genomic variants and clinical phenotypes from Saudi Arabian patients with rare genetic diseases. Cases are encoded as GA4GH Phenopackets and linked to HPO, OMIM, MONDO, ClinVar, dbSNP and TogoVar, and queryable via a public SPARQL endpoint." />
+    <meta name="keywords" content="rare diseases, genomics, genomic variants, clinical phenotypes, Saudi Arabia, Human Phenotype Ontology, HPO, OMIM, MONDO, ClinVar, dbSNP, GA4GH Phenopackets, knowledge graph, SPARQL, gene prioritization, precision medicine" />
+    <meta name="author" content="Robert Hoehndorf, KAUST Bio-Ontology Research Group" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://pavs.phenomebrowser.net/" />
+
+    <!-- Open Graph (Facebook, LinkedIn, Slack, etc.) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PAVS" />
+    <meta property="og:title" content="PAVS — Phenotype-Associated Variants in Saudi Arabia" />
+    <meta property="og:description" content="A curated, openly licensed knowledge graph of genomic variants and clinical phenotypes from Saudi Arabian rare-disease patients, encoded as GA4GH Phenopackets and queryable via a public SPARQL endpoint." />
+    <meta property="og:url" content="https://pavs.phenomebrowser.net/" />
+    <meta property="og:image" content="https://pavs.phenomebrowser.net/logo.svg" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ar_SA" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="PAVS — Phenotype-Associated Variants in Saudi Arabia" />
+    <meta name="twitter:description" content="A curated, openly licensed knowledge graph of genomic variants and clinical phenotypes from Saudi Arabian rare-disease patients." />
+    <meta name="twitter:image" content="https://pavs.phenomebrowser.net/logo.svg" />
+
+    <!-- Structured data: schema.org Dataset (critical for scientific-dataset discovery,
+         e.g. Google Dataset Search). Facts mirror /.well-known/void (void.ttl). -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org/",
+      "@type": "Dataset",
+      "name": "Phenotype-Associated Variants in Saudi Arabia (PAVS)",
+      "alternateName": "PAVS",
+      "description": "PAVS is a curated knowledge graph of genomic variants and clinical phenotypes from Saudi Arabian patients with rare genetic diseases. The dataset integrates multiple clinical cohorts and links each case to international ontologies (HPO, OMIM, MONDO) and variant databases (ClinVar, dbSNP, TogoVar). Data is represented using the GA4GH Phenopackets v2 standard and exposed as RDF for SPARQL querying.",
+      "url": "https://pavs.phenomebrowser.net/",
+      "sameAs": [
+        "https://www.wikidata.org/wiki/Q117247875",
+        "https://github.com/bio-ontology-research-group/pavs-knowledge-graph"
+      ],
+      "identifier": "https://pavs.phenomebrowser.net/dataset",
+      "version": "1.1.0",
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "isAccessibleForFree": true,
+      "keywords": [
+        "rare diseases",
+        "genomic variants",
+        "clinical phenotypes",
+        "Saudi Arabia",
+        "Human Phenotype Ontology",
+        "HPO",
+        "OMIM",
+        "GA4GH Phenopackets"
+      ],
+      "spatialCoverage": "Saudi Arabia",
+      "temporalCoverage": "2015/2024",
+      "creator": {
+        "@type": "Person",
+        "name": "Robert Hoehndorf",
+        "identifier": "https://orcid.org/0000-0001-8149-5890",
+        "affiliation": {
+          "@type": "Organization",
+          "name": "King Abdullah University of Science and Technology"
+        }
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "KAUST Bio-Ontology Research Group",
+        "url": "https://cemse.kaust.edu.sa/borg"
+      },
+      "includedInDataCatalog": {
+        "@type": "DataCatalog",
+        "name": "PAVS",
+        "url": "https://pavs.phenomebrowser.net/"
+      },
+      "distribution": [
+        {
+          "@type": "DataDownload",
+          "name": "PAVS public SPARQL endpoint",
+          "encodingFormat": "application/sparql-query",
+          "contentUrl": "https://pavs.phenomebrowser.net/sparql"
+        },
+        {
+          "@type": "DataDownload",
+          "name": "PAVS RDF / Phenopackets releases",
+          "encodingFormat": "text/turtle",
+          "contentUrl": "https://github.com/bio-ontology-research-group/pavs-knowledge-graph/releases"
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
+    <noscript>
+      PAVS is an interactive browser for phenotype-associated variants in Saudi Arabia.
+      Please enable JavaScript to use the web interface, or query the dataset directly via the
+      public SPARQL endpoint at https://pavs.phenomebrowser.net/sparql.
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/index.tsx"></script>
   </body>

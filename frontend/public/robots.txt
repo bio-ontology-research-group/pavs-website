@@ -1,0 +1,11 @@
+# robots.txt for PAVS — https://pavs.phenomebrowser.net
+# Phenotype-Associated Variants in Saudi Arabia
+
+User-agent: *
+Allow: /
+
+# The SPARQL endpoint and JSON API are machine interfaces, not pages to index.
+Disallow: /sparql
+Disallow: /api/
+
+Sitemap: https://pavs.phenomebrowser.net/sitemap.xml

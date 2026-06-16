@@ -61,6 +61,16 @@ const App: React.FC = () => {
       <Helmet>
         <title>PAVS — Phenotype-Associated Variants in Saudi Arabia</title>
         <meta name="description" content="A comprehensive database of phenotype-associated variants in Saudi Arabia, facilitating genomic research and diagnostics." />
+        {/* Per-route canonical so JS-rendering crawlers index the right URL. */}
+        <link rel="canonical" href={`https://pavs.phenomebrowser.net${location.pathname}`} />
+        {/* Open Graph / Twitter defaults; per-page components may override title/description. */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="PAVS" />
+        <meta property="og:title" content="PAVS — Phenotype-Associated Variants in Saudi Arabia" />
+        <meta property="og:description" content="A comprehensive database of phenotype-associated variants in Saudi Arabia, facilitating genomic research and diagnostics." />
+        <meta property="og:url" content={`https://pavs.phenomebrowser.net${location.pathname}`} />
+        <meta property="og:image" content="https://pavs.phenomebrowser.net/logo.svg" />
+        <meta name="twitter:card" content="summary" />
       </Helmet>
 
       <nav className="navbar">
