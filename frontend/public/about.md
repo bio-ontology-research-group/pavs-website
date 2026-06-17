@@ -127,7 +127,7 @@ We acknowledge support from the KAUST Supercomputing Laboratory.
 
 ## License
 
-Data are released under [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/).
+Data are released under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
 
 Code is released under the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html)
 at [github.com/bio-ontology-research-group/pavs](https://github.com/bio-ontology-research-group/pavs).

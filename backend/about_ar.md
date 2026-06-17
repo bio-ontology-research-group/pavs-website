@@ -62,7 +62,7 @@
 
 ## الرخصة
 
-البيانات مرخصة بموجب [رخصة المشاع الإبداعي — نسب المصنف — غير تجاري 4.0 الدولية (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/).
+البيانات مرخصة بموجب [رخصة المشاع الإبداعي — نسب المصنف 4.0 الدولية (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
 
 الكود البرمجي مرخص بموجب [رخصة GNU العامة الإصدار 3](https://www.gnu.org/licenses/gpl-3.0.html)
 على [github.com/bio-ontology-research-group/pavs](https://github.com/bio-ontology-research-group/pavs).
